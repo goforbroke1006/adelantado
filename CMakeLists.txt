@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 add_executable(${PROJECT_NAME} main.cpp
         url.h
-        HTTPClient.cpp HTTPClient.h runtime.h cfgloader.h html-filter.h repo.h repo.cpp)
+        HTTPClient.cpp HTTPClient.h runtime.h cfgloader.h html-filter.h repo.h repo.cpp app.h)
 
 find_package(CURL)
 if (CURL_FOUND)

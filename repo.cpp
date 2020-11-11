@@ -4,8 +4,6 @@
 
 #include "repo.h"
 
-#include <fmt/core.h>
-
 Repo::Repo(PGconn *conn)
         : mConnection(conn) {}
 
@@ -67,8 +65,26 @@ Repo::storeLink(
 }
 
 std::vector<std::string> Repo::loadUncheckedLinks(unsigned int limit) {
-
     std::string sql = "SELECT address FROM links WHERE checked_at IS NULL LIMIT " + std::to_string(limit);
+    PGresult *res = PQexec(mConnection, sql.c_str());
+    if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+        fprintf(stderr, "failed: %s", PQerrorMessage(mConnection));
+    }
+
+    int rows = PQntuples(res);
+    PQgetvalue(res, 0, 0);
+
+    std::vector<std::string> links(rows);
+    for (int i = 0; i < rows; i++) {
+        links[i] = (PQgetvalue(res, i, 0));
+    }
+
+    PQclear(res);
+    return links;
+}
+
+std::vector<std::string> Repo::loadCheckedLinks(unsigned int limit) {
+    std::string sql = "SELECT address FROM links ORDER BY checked_at ASC LIMIT " + std::to_string(limit);
     PGresult *res = PQexec(mConnection, sql.c_str());
     if (PQresultStatus(res) != PGRES_TUPLES_OK) {
         fprintf(stderr, "failed: %s", PQerrorMessage(mConnection));

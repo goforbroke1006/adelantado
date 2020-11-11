@@ -2,9 +2,6 @@
 // Created by goforbroke on 10.11.2020.
 //
 
-//#ifndef ADELANTADO_URL_TEST_CPP
-//#define ADELANTADO_URL_TEST_CPP
-
 #include <gtest/gtest.h>
 
 #include "../url.h"
@@ -27,5 +24,3 @@ TEST(url_parseURL_path, positive1) {
     ASSERT_EQ("/2.0/top100", parseURL("https://2stocks.ru:80/2.0/top100").path);
     ASSERT_EQ("/", parseURL("http://TEST-test.d3.d2.d1:80/").path);
 }
-
-//#endif //ADELANTADO_URL_TEST_CPP

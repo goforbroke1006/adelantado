@@ -27,7 +27,6 @@ git clone -b v1.0.0 --depth 1 https://github.com/google/gumbo-parser.git
   pkg-config --libs gumbo           # print linker flags
   pkg-config --cflags --libs gumbo  # print both
 )
-cd ..
 sudo rm -rf ./gumbo-parser
 
 

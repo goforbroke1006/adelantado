@@ -1,6 +1,10 @@
 project(adelantado-tests)
 
-add_executable(${PROJECT_NAME} main.cpp url.test.cpp)
+add_executable(${PROJECT_NAME}
+        main.cpp
+        url.test.cpp
+        app.test.cpp
+        )
 
 target_link_libraries(${PROJECT_NAME} gtest gtest_main pthread)
 

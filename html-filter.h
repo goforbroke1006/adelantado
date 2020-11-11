@@ -115,6 +115,10 @@ normalizeHrefsToLinks(
             links[i] = protocol + ":" + links[i];
         }
 
+        // TODO: remove fragment from link
+
+        // TODO: remove utm params
+
 #ifdef DEBUG
         if (before != links[i]) {
             std::cout << "    " << before << " => " << links[i] << std::endl;

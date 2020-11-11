@@ -22,7 +22,9 @@ public:
             const std::map<std::string, unsigned int> &keywords
     );
 
-    std::vector<std::string > loadUncheckedLinks(unsigned int limit);
+    std::vector<std::string> loadUncheckedLinks(unsigned int limit);
+
+    std::vector<std::string> loadCheckedLinks(unsigned int limit);
 
 private:
     PGconn *mConnection;
