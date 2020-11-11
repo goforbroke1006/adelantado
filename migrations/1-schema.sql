@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS links
 (
-    id               SERIAL,
+    id               SERIAL        NOT NULL PRIMARY KEY,
     created_at       TIMESTAMP     NOT NULL DEFAULT NOW(),
     address          VARCHAR(2048) NOT NULL UNIQUE,
     meta_title       VARCHAR(2048) NOT NULL,

@@ -92,11 +92,18 @@ void recursiveFilterLinks(GumboNode *node, std::vector<std::string> &result) {
     }
 }
 
-void normalizeHrefsToLinks(std::vector<std::string> links, const std::string &protocol, const std::string &domain) {
+void
+normalizeHrefsToLinks(
+        std::vector<std::string> links,
+        const std::string &protocol,
+        const std::string &domain
+) {
     std::string prefix = protocol + "://" + domain;
 
     for (size_t i = 0; i < links.size(); ++i) {
+#ifdef DEBUG
         std::string before = links[i];
+#endif
 
         // absolute link for current domain
         if (links[i][0] == '/' && links[i][1] != '/') {
@@ -108,10 +115,14 @@ void normalizeHrefsToLinks(std::vector<std::string> links, const std::string &pr
             links[i] = protocol + ":" + links[i];
         }
 
+#ifdef DEBUG
         if (before != links[i]) {
             std::cout << "    " << before << " => " << links[i] << std::endl;
         }
+#endif
+
     }
+
 }
 
 #endif //ADELANTADO_HTML_FILTER_H

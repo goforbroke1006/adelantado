@@ -48,6 +48,9 @@ URL parseURL(const std::string &url) {
             break;
     }
 
+    if (nextSymbol >= url.length())
+        return result; // if domain name only
+
     // check port is defined
     if (url.at(nextSymbol) == ':') {
         ++nextSymbol;

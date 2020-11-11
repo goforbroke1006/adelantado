@@ -14,8 +14,7 @@ void
 Repo::registerLink(const std::string &address) {
     std::string sql = ""
                       "INSERT INTO links (address, meta_title, meta_description, body_title, body_keywords) "
-                      "VALUES ('" + address + "', '', '', '', '{}')"
-                                              "ON CONFLICT DO NOTHING";
+                      "VALUES ('" + address + "', '', '', '', '{}')";
 
     PGresult *res = PQexec(mConnection, sql.c_str());
     if (PQresultStatus(res) != PGRES_COMMAND_OK) {
@@ -51,7 +50,8 @@ Repo::storeLink(
                       "  meta_title       = $2, "
                       "  meta_description = '', "
                       "  body_title       = '', "
-                      "  body_keywords    = $3  ";
+                      "  body_keywords    = $3, "
+                      "  checked_at       = now() ";
 
     const char *paramValues[3] = {
             address.c_str(),
@@ -64,4 +64,24 @@ Repo::storeLink(
         fprintf(stderr, "failed: %s", PQerrorMessage(mConnection));
     }
     PQclear(res);
+}
+
+std::vector<std::string> Repo::loadUncheckedLinks(unsigned int limit) {
+
+    std::string sql = "SELECT address FROM links WHERE checked_at IS NULL LIMIT " + std::to_string(limit);
+    PGresult *res = PQexec(mConnection, sql.c_str());
+    if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+        fprintf(stderr, "failed: %s", PQerrorMessage(mConnection));
+    }
+
+    int rows = PQntuples(res);
+    PQgetvalue(res, 0, 0);
+
+    std::vector<std::string> links(rows);
+    for (int i = 0; i < rows; i++) {
+        links[i] = (PQgetvalue(res, i, 0));
+    }
+
+    PQclear(res);
+    return links;
 }

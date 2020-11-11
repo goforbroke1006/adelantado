@@ -7,6 +7,7 @@
 
 #include <string>
 #include <map>
+#include <vector>
 #include <postgresql/libpq-fe.h>
 
 class Repo {
@@ -20,6 +21,8 @@ public:
             const std::string &metaTitle,
             const std::map<std::string, unsigned int> &keywords
     );
+
+    std::vector<std::string > loadUncheckedLinks(unsigned int limit);
 
 private:
     PGconn *mConnection;
