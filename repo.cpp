@@ -4,9 +4,14 @@
 
 #include "repo.h"
 
+#include <stdexcept>
+
+bool isDuplicateError(const std::string &message) {
+    return message.find("duplicate key value violates unique constraint") != std::string::npos;
+}
+
 Repo::Repo(PGconn *conn)
         : mConnection(conn) {}
-
 
 void
 Repo::registerLink(const std::string &address) {
@@ -16,7 +21,12 @@ Repo::registerLink(const std::string &address) {
 
     PGresult *res = PQexec(mConnection, sql.c_str());
     if (PQresultStatus(res) != PGRES_COMMAND_OK) {
-        fprintf(stderr, "failed: %s", PQerrorMessage(mConnection));
+        char *message = PQerrorMessage(mConnection);
+        if (isDuplicateError(message)) {
+            throw DuplicateKeyException(message);
+        } else {
+            throw std::runtime_error(message);
+        }
     }
     PQclear(res);
 }
@@ -39,9 +49,9 @@ Repo::storeLink(
                       "   checked_at"
                       ") VALUES ("
                       "   $1, "
-                      "   $2 , "
-                      "   $3,   "
-                      "   $4,   "
+                      "   $2, "
+                      "   $3, "
+                      "   $4, "
                       "   $5, "
                       "   NOW() "
                       ")"

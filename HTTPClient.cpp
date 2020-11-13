@@ -13,7 +13,7 @@ size_t writeFunc(char *ptr, size_t size, size_t nmemb, void *userdata) {
     return realsize;
 }
 
-HTTPResponse HTTPClient::load(const std::string &url) {
+HTTPResponse HTTPClient::load(const std::string &url, unsigned int timeout) {
     std::string content;
 
     CURL *handle = curl_easy_init();
@@ -21,7 +21,7 @@ HTTPResponse HTTPClient::load(const std::string &url) {
     curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, writeFunc);
     curl_easy_setopt(handle, CURLOPT_WRITEDATA, &content);
-    curl_easy_setopt(handle, CURLOPT_TIMEOUT, 5); // wait 5 sec
+    curl_easy_setopt(handle, CURLOPT_TIMEOUT, timeout);
     curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 5);
 
     CURLcode res = curl_easy_perform(handle);
@@ -30,8 +30,11 @@ HTTPResponse HTTPClient::load(const std::string &url) {
         fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
     }
 
+    long response_code;
+    curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &response_code);
+
     /* always cleanup */
     curl_easy_cleanup(handle);
 
-    return HTTPResponse{0, content};
+    return HTTPResponse{response_code, content};
 }

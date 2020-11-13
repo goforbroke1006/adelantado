@@ -61,12 +61,25 @@ int main() {
             if (queuedLink.rfind("http", 0) != 0) {
                 continue;
             }
-            repo->registerLink(queuedLink);
+            if (
+                    queuedLink.find(" ") != std::string::npos
+                    || queuedLink.find("<") != std::string::npos
+                    || queuedLink.find(">") != std::string::npos
+                    ) {
+                continue;
+            }
+            try {
+                repo->registerLink(queuedLink);
+            } catch (DuplicateKeyException &ex) {
+                // TODO:
+            } catch (std::runtime_error &ex) {
+                std::cerr << ex.what() << std::endl;
+            }
         }
 
         auto finish = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start).count();
-        std::cout << "Spend time: " << (static_cast<double >(duration) / 1000) << " sec." << std::endl;
+        std::cout << "Spend time: " << (static_cast<double>(duration) / 1000) << " sec." << std::endl;
 
         sleep(10);
     }
@@ -82,12 +95,17 @@ ObserverResult *MultiThreadLinksObserver(const std::vector<std::string> &links, 
         AbstractPageScanner *scanner = new GumboPageScanner();
 
         for (const auto &link : linksChunk) {
-            const HTTPResponse &response = HTTPClient::load(link);
             URL url;
             try {
                 url = parseURL(link);
             } catch (std::runtime_error &err) {
                 // TODO: log errors
+                continue;
+            }
+
+            const HTTPResponse &response = HTTPClient::load(link);
+
+            if (response.statusCode >= 400) {
                 continue;
             }
 

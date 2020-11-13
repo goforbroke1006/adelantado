@@ -9,7 +9,7 @@
 #include <string>
 
 struct HTTPResponse {
-    int statusCode;
+    long statusCode;
     std::string content;
 };
 
@@ -17,7 +17,7 @@ size_t writeFunc (char *ptr, size_t size, size_t nmemb, void *userdata);
 
 class HTTPClient {
 public:
-    static HTTPResponse load(const std::string & url);
+    static HTTPResponse load(const std::string & url, unsigned int timeout = 10);
 };
 
 

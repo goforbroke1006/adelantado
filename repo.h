@@ -6,11 +6,25 @@
 #define ADELANTADO_REPO_H
 
 
-
 #include <string>
 #include <map>
 #include <vector>
 #include <postgresql/libpq-fe.h>
+
+bool isDuplicateError(const std::string &message);
+
+class DuplicateKeyException : public std::exception {
+public:
+    DuplicateKeyException(const std::string &message)
+            : mMessage(message) {}
+
+    const char *what() const throw() {
+        return mMessage.c_str();
+    }
+
+private:
+    std::string mMessage;
+};
 
 class Repo {
 public:
