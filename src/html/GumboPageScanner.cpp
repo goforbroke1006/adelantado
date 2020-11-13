@@ -67,7 +67,7 @@ std::string GumboPageScanner::getMetaDescription() {
             break;
         }
     }
-    assert(head != nullptr);
+    if (nullptr == head) return "";
 
     GumboVector *head_children = &head->v.element.children;
     for (int i = 0; i < head_children->length; ++i) {
@@ -107,7 +107,9 @@ std::string GumboPageScanner::getBodyTitle() {
             break;
         }
     }
-    assert(body != nullptr);
+    if (nullptr == body) {
+        return "";
+    }
 
     getBodyTitleRecursively(body, resultTitle);
 
@@ -120,9 +122,6 @@ std::map<std::string, unsigned int> GumboPageScanner::getBodyKeywords() {
 }
 
 void GumboPageScanner::getBodyTitleRecursively(GumboNode *node, std::string &result) {
-//    assert(node->type == GUMBO_NODE_ELEMENT);
-//    assert(node->v.element.children.length >= 1);
-
     if (node->type == GUMBO_NODE_ELEMENT && node->v.element.tag == GUMBO_TAG_H1) {
         auto *title_text = (GumboNode *) node->v.element.children.data[0];
         if (nullptr == title_text)
