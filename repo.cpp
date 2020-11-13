@@ -25,6 +25,8 @@ void
 Repo::storeLink(
         const std::string &address,
         const std::string &metaTitle,
+        const std::string &metaDescr,
+        const std::string &bodyTitle,
         const std::map<std::string, unsigned int> &keywords
 ) {
     std::string sql = ""
@@ -38,26 +40,30 @@ Repo::storeLink(
                       ") VALUES ("
                       "   $1, "
                       "   $2 , "
-                      "   '',   "
-                      "   '',   "
-                      "   $3, "
+                      "   $3,   "
+                      "   $4,   "
+                      "   $5, "
                       "   NOW() "
                       ")"
                       "ON CONFLICT (address) "
                       "DO UPDATE SET "
                       "  meta_title       = $2, "
-                      "  meta_description = '', "
-                      "  body_title       = '', "
-                      "  body_keywords    = $3, "
+                      "  meta_description = $3, "
+                      "  body_title       = $4, "
+                      "  body_keywords    = $5, "
                       "  checked_at       = now() ";
 
-    const char *paramValues[3] = {
+    const int paramsSize = 5;
+    const char *paramValues[paramsSize] = {
             address.c_str(),
             metaTitle.c_str(),
+            metaDescr.c_str(),
+            bodyTitle.c_str(),
             "{}"
     };
-    PGresult *res = PQexecParams(mConnection, sql.c_str(),
-                                 3, nullptr, paramValues, nullptr, nullptr, 0);
+    PGresult *res = PQexecParams(
+            mConnection, sql.c_str(),
+            paramsSize, nullptr, paramValues, nullptr, nullptr, 0);
     if (PQresultStatus(res) != PGRES_COMMAND_OK) {
         fprintf(stderr, "failed: %s", PQerrorMessage(mConnection));
     }

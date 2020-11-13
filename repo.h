@@ -5,6 +5,8 @@
 #ifndef ADELANTADO_REPO_H
 #define ADELANTADO_REPO_H
 
+
+
 #include <string>
 #include <map>
 #include <vector>
@@ -19,6 +21,8 @@ public:
     void storeLink(
             const std::string &address,
             const std::string &metaTitle,
+            const std::string &metaDescr,
+            const std::string &BodyTitle,
             const std::map<std::string, unsigned int> &keywords
     );
 

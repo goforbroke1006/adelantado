@@ -94,55 +94,6 @@ private:
     std::mutex mQueuedLinksMX;
 };
 
-ObserverResult *
-MultiThreadLinksObserver(
-        const std::vector<std::string> &links,
-        size_t multi
-) {
-    VectorBulkSplitter splitter(links, multi);
-    std::vector<std::thread> threads;
 
-    auto func = [](const std::vector<std::string> &linksChunk, ObserverResult *result) {
-        for (const auto &link : linksChunk) {
-            const HTTPResponse &response = HTTPClient::load(link);
-            URL url;
-            try {
-                url = parseURL(link);
-            } catch (std::runtime_error &err) {
-                // TODO: log errors
-                continue;
-            }
-
-            std::string metaTitle = getPageTitle(response.content);
-            // TODO: retrieve meta description
-            // TODO: retrieve body title
-            // TODO: retrieve body keywords
-            result->pushVisited(Resource{link, metaTitle});
-
-            const std::vector<std::string> &contentLinks = getLinkAddresses(response.content);
-            normalizeHrefsToLinks(contentLinks, url.protocol, url.host);
-            if (!contentLinks.empty()) {
-                result->appendLinks(contentLinks);
-                std::cout << link << " : ok" << std::endl;
-            } else {
-                std::cout << link << " : no links" << std::endl;
-            }
-
-        }
-    };
-
-    ObserverResult *observerResult = new ObserverResult;
-
-    for (size_t thi = 0; thi < multi; ++thi) {
-        std::vector<std::string> chunk = splitter.getNext();
-        std::thread thread(func, chunk, observerResult);
-        threads.emplace_back(std::move(thread));
-    }
-    for (auto &th : threads) {
-        th.join();
-    }
-
-    return observerResult;
-}
 
 #endif //ADELANTADO_APP_H

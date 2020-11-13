@@ -4,6 +4,8 @@
 #include "runtime.h"
 #include "repo.h"
 #include "app.h"
+#include "src/html/AbstractPageScanner.h"
+#include "src/html/GumboPageScanner.h"
 #include <postgresql/libpq-fe.h>
 
 bool isReady = true;
@@ -14,6 +16,12 @@ void signalHandler(int signum) {
     isReady = false;
     statusCode = signum;
 }
+
+ObserverResult *
+MultiThreadLinksObserver(
+        const std::vector<std::string> &links,
+        size_t multi
+);
 
 int main() {
     signal(SIGINT, signalHandler);
@@ -41,7 +49,13 @@ int main() {
 
         ObserverResult *pResult = MultiThreadLinksObserver(links, getCPUCount());
         for (auto &res : pResult->getMVisitedLinks()) {
-            repo->storeLink(res.address, res.metaTitle, res.bodyKeywords);
+            repo->storeLink(
+                    res.address,
+                    res.metaTitle,
+                    res.metaDescr,
+                    res.bodyTitle,
+                    res.bodyKeywords
+            );
         }
         for (auto &queuedLink : pResult->getMQueuedLinks()) {
             if (queuedLink.rfind("http", 0) != 0) {
@@ -58,4 +72,58 @@ int main() {
     }
 
     return statusCode;
+}
+
+ObserverResult *MultiThreadLinksObserver(const std::vector<std::string> &links, size_t multi) {
+    VectorBulkSplitter splitter(links, multi);
+    std::vector<std::thread> threads;
+
+    auto func = [](const std::vector<std::string> &linksChunk, ObserverResult *result) {
+        AbstractPageScanner *scanner = new GumboPageScanner();
+
+        for (const auto &link : linksChunk) {
+            const HTTPResponse &response = HTTPClient::load(link);
+            URL url;
+            try {
+                url = parseURL(link);
+            } catch (std::runtime_error &err) {
+                // TODO: log errors
+                continue;
+            }
+
+            scanner->load(response.content);
+
+            result->pushVisited(Resource{
+                    link,
+                    scanner->getMetaTitle(),
+                    scanner->getMetaDescription(),
+                    scanner->getBodyTitle(),
+            });
+
+            const std::vector<std::string> &contentLinks = getLinkAddresses(response.content);
+            normalizeHrefsToLinks(contentLinks, url.protocol, url.host);
+            if (!contentLinks.empty()) {
+                result->appendLinks(contentLinks);
+//                std::cout << link << " : ok" << std::endl;
+            } else {
+//                std::cout << link << " : no links" << std::endl;
+            }
+
+        }
+
+        delete scanner;
+    };
+
+    auto *observerResult = new ObserverResult;
+
+    for (size_t thi = 0; thi < multi; ++thi) {
+        std::vector<std::string> chunk = splitter.getNext();
+        std::thread thread(func, chunk, observerResult);
+        threads.emplace_back(std::move(thread));
+    }
+    for (auto &th : threads) {
+        th.join();
+    }
+
+    return observerResult;
 }

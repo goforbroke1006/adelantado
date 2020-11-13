@@ -4,8 +4,17 @@ project(adelantado)
 set(CMAKE_CXX_STANDARD 20)
 
 add_executable(${PROJECT_NAME} main.cpp
-        url.h
-        HTTPClient.cpp HTTPClient.h runtime.h cfgloader.h html-filter.h repo.h repo.cpp app.h)
+        url.h url.cpp
+        HTTPClient.h HTTPClient.cpp
+        runtime.h
+        cfgloader.h
+        html-filter.h html-filter.cpp
+        repo.h repo.cpp
+        app.h app.cpp
+
+        src/html/AbstractPageScanner.h
+        src/html/GumboPageScanner.h src/html/GumboPageScanner.cpp
+        )
 
 find_package(CURL)
 if (CURL_FOUND)
