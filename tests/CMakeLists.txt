@@ -5,7 +5,8 @@ add_executable(${PROJECT_NAME}
 
         ../url.cpp url.test.cpp
         ../app.cpp app.test.cpp
-        ../src/html/GumboPageScanner.cpp src/html/GumboPageScanner.test.cpp
+        ../src/parser/GumboPageScanner.cpp src/parser/GumboPageScanner.test.cpp
+        ../src/parser/KeywordEntries.cpp src/parser/KeywordEntries.test.cpp
         )
 
 target_link_libraries(${PROJECT_NAME} gtest gtest_main pthread)

@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+curl https://raw.githubusercontent.com/nlohmann/json/develop/single_include/nlohmann/json.hpp -o modules/nlohmann-json/json.hpp
+
 sudo apt install -y \
     libcurl4-openssl-dev
 
@@ -37,3 +39,15 @@ pkg-config --libs libpq
 
 sudo apt install -y libfmt-dev
 pkg-config --libs libfmt-dev
+
+#wget http://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.11.tar.gz
+#tar -xvzf libiconv-1.11.tar.gz
+#(
+#  cd libiconv-1.11 || exit 1
+#  ./configure --prefix=/usr/local
+#  make
+#  sudo make install
+#  sudo ldconfig
+#)
+#sudo rm -rf libiconv-1.11/
+#rm -f libiconv-1.11.tar.gz

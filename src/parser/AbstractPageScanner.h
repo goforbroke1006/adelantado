@@ -7,6 +7,7 @@
 
 #include <string>
 #include <map>
+#include <vector>
 
 class AbstractPageScanner {
 public:
@@ -18,7 +19,7 @@ public:
 
     virtual std::string getBodyTitle() = 0;
 
-    virtual std::map<std::string, unsigned int> getBodyKeywords() = 0;
+    virtual std::vector<std::string> getBodyText() = 0;
 };
 
 #endif //ADELANTADO_src_html_ABSTRACT_PAGE_SCANNER_H

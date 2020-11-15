@@ -4,8 +4,10 @@
 #include "runtime.h"
 #include "repo.h"
 #include "app.h"
-#include "src/html/AbstractPageScanner.h"
-#include "src/html/GumboPageScanner.h"
+#include "src/parser/AbstractPageScanner.h"
+#include "src/parser/GumboPageScanner.h"
+#include "src/parser/KeywordEntries.h"
+#include "cfgloader.h"
 #include <postgresql/libpq-fe.h>
 
 bool isReady = true;
@@ -61,6 +63,9 @@ int main() {
             if (queuedLink.rfind("http", 0) != 0) {
                 continue;
             }
+            if (queuedLink.find("'") != std::string::npos) { // FIXME: workaround
+                continue;
+            }
             if (
                     queuedLink.find(" ") != std::string::npos
                     || queuedLink.find("<") != std::string::npos
@@ -91,10 +96,15 @@ ObserverResult *MultiThreadLinksObserver(const std::vector<std::string> &links, 
     VectorBulkSplitter splitter(links, multi);
     std::vector<std::thread> threads;
 
-    auto func = [](const std::vector<std::string> &linksChunk, ObserverResult *result) {
+    auto keywordIgnore = loadConfig("./keyword-ignore.txt");
+
+    auto func = [&](const std::vector<std::string> &linksChunk, ObserverResult *result) {
         AbstractPageScanner *scanner = new GumboPageScanner();
+        KeywordEntries keywordEntries(4, keywordIgnore);
 
         for (const auto &link : linksChunk) {
+            keywordEntries.clear();
+
             URL url;
             try {
                 url = parseURL(link);
@@ -111,11 +121,22 @@ ObserverResult *MultiThreadLinksObserver(const std::vector<std::string> &links, 
 
             scanner->load(response.content);
 
+            for (const auto &line : scanner->getBodyText()) {
+                keywordEntries.appendPhrase(line);
+            }
+
+
+            std::map<std::string, unsigned int> keywordsMap = keywordEntries.getTop();
+            if (keywordsMap.empty()) {
+                continue;
+            }
+
             result->pushVisited(Resource{
                     link,
                     scanner->getMetaTitle(),
                     scanner->getMetaDescription(),
                     scanner->getBodyTitle(),
+                    keywordsMap
             });
 
             const std::vector<std::string> &contentLinks = getLinkAddresses(response.content);

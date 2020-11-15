@@ -3,6 +3,7 @@
 //
 
 #include "GumboPageScanner.h"
+#include "KeywordEntries.h"
 
 #include <cassert>
 
@@ -116,9 +117,24 @@ std::string GumboPageScanner::getBodyTitle() {
     return resultTitle;
 }
 
-std::map<std::string, unsigned int> GumboPageScanner::getBodyKeywords() {
-    // TODO: retrieve body keywords
-    return std::map<std::string, unsigned int>();
+std::vector<std::string> GumboPageScanner::getBodyText() {
+    const GumboVector *root_children = &mOutput->root->v.element.children;
+    GumboNode *body = nullptr;
+    for (int i = 0; i < root_children->length; ++i) {
+        auto *child = (GumboNode *) root_children->data[i];
+        if (child->type == GUMBO_NODE_ELEMENT && child->v.element.tag == GUMBO_TAG_BODY) {
+            body = child;
+            break;
+        }
+    }
+    if (nullptr == body) {
+        return {};
+    }
+
+    std::vector<std::string> lines;
+    getTextLinesRecursively(body, lines);
+
+    return lines;
 }
 
 void GumboPageScanner::getBodyTitleRecursively(GumboNode *node, std::string &result) {
@@ -140,6 +156,30 @@ void GumboPageScanner::getBodyTitleRecursively(GumboNode *node, std::string &res
         auto *child = (GumboNode *) children->data[i];
         if (child->type == GUMBO_NODE_ELEMENT && node->v.element.children.length >= 1) {
             getBodyTitleRecursively(child, result);
+        }
+    }
+}
+
+void GumboPageScanner::getTextLinesRecursively(GumboNode *node, std::vector<std::string> &result) {
+    if (node->type == GUMBO_NODE_ELEMENT
+        && (
+                node->v.element.tag == GUMBO_TAG_DIV
+                || node->v.element.tag == GUMBO_TAG_P
+                || node->v.element.tag == GUMBO_TAG_SPAN
+        )
+            ) {
+        auto *title_text = (GumboNode *) node->v.element.children.data[0];
+        if (nullptr != title_text && title_text->type == GUMBO_NODE_TEXT) {
+            const char *line = title_text->v.text.text;
+            result.emplace_back(line);
+        }
+    }
+
+    const GumboVector *children = &node->v.element.children;
+    for (int i = 0; i < children->length; ++i) {
+        auto *child = (GumboNode *) children->data[i];
+        if (child->type == GUMBO_NODE_ELEMENT && node->v.element.children.length >= 1) {
+            getTextLinesRecursively(child, result);
         }
     }
 }

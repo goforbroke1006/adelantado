@@ -9,6 +9,7 @@
 #include "AbstractPageScanner.h"
 
 #include <gumbo.h>
+#include <vector>
 
 class GumboPageScanner : public AbstractPageScanner {
 public:
@@ -24,12 +25,14 @@ public:
 
     std::string getBodyTitle() override;
 
-    std::map<std::string, unsigned int> getBodyKeywords() override;
+    std::vector<std::string> getBodyText() override;
 
 private:
     GumboOutput *mOutput;
 
     void getBodyTitleRecursively(GumboNode *node, std::string &result);
+
+    void getTextLinesRecursively(GumboNode *node, std::vector<std::string> &result);
 };
 
 

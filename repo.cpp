@@ -5,6 +5,7 @@
 #include "repo.h"
 
 #include <stdexcept>
+#include "modules/nlohmann-json/json.hpp"
 
 bool isDuplicateError(const std::string &message) {
     return message.find("duplicate key value violates unique constraint") != std::string::npos;
@@ -61,7 +62,18 @@ Repo::storeLink(
                       "  meta_description = $3, "
                       "  body_title       = $4, "
                       "  body_keywords    = $5, "
-                      "  checked_at       = now() ";
+                      "  checked_at       = NOW() ";
+
+    std::string keywordsStr;
+    if (!keywords.empty()) {
+        nlohmann::json keywordsJson;
+        for (const auto &kv : keywords) {
+            keywordsJson[kv.first] = kv.second;
+        }
+        keywordsStr = keywordsJson.dump();
+    } else {
+        keywordsStr = "{}";
+    }
 
     const int paramsSize = 5;
     const char *paramValues[paramsSize] = {
@@ -69,7 +81,7 @@ Repo::storeLink(
             metaTitle.c_str(),
             metaDescr.c_str(),
             bodyTitle.c_str(),
-            "{}"
+            keywordsStr.c_str()
     };
     PGresult *res = PQexecParams(
             mConnection, sql.c_str(),

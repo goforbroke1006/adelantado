@@ -4,7 +4,7 @@
 
 #include <gtest/gtest.h>
 
-#include "../../../src/html/GumboPageScanner.h"
+#include "../../../src/parser/GumboPageScanner.h"
 
 TEST(GumboPageScanner_all, positive_simplest) {
     const char *content = R"(
@@ -18,6 +18,13 @@ TEST(GumboPageScanner_all, positive_simplest) {
 
 <body>
     <h1>Some title some title!</h1>
+
+    <div>Ut enim ad minim veniam,
+        quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat</div>
+
+    <p>Lorem ipsum dolor sit amet,
+        consectetur adipiscing elit,
+        sed do eiusmod tempor incididunt ut labore et dolore magna aliqua</p>
 </body>
 <html>
 
@@ -28,4 +35,6 @@ TEST(GumboPageScanner_all, positive_simplest) {
     ASSERT_EQ("Hello Gumbo, thank Google!", scanner->getMetaTitle());
     ASSERT_EQ("Some short page descRipTioN!!!", scanner->getMetaDescription());
     ASSERT_EQ("Some title some title!", scanner->getBodyTitle());
+
+    ASSERT_EQ(2, scanner->getBodyText().size());
 }
