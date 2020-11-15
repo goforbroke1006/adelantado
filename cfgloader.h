@@ -9,6 +9,19 @@
 #include <string>
 #include <fstream>
 #include <stdexcept>
+#include <libconfig.h++>
+
+libconfig::Config *loadAppConfig(const std::string &filename) {
+    auto *cfg = new libconfig::Config;
+    try {
+        cfg->readFile(filename.c_str());
+    }
+    catch (const libconfig::FileIOException &fioex) {
+        std::cerr << "I/O error while reading file." << std::endl;
+        exit(EXIT_FAILURE); // TODO: fix
+    }
+    return cfg;
+}
 
 std::vector<std::string> loadConfig(const std::string &filename) {
     std::ifstream ifs(filename);

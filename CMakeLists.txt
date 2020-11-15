@@ -32,6 +32,7 @@ add_subdirectory(tests)
 
 
 # move configs
+file(COPY adelantado.cfg DESTINATION ${CMAKE_BINARY_DIR})
 file(COPY keywords.txt DESTINATION ${CMAKE_BINARY_DIR})
 file(COPY links.txt DESTINATION ${CMAKE_BINARY_DIR})
 file(COPY keyword-ignore.txt DESTINATION ${CMAKE_BINARY_DIR})
@@ -43,8 +44,11 @@ target_link_libraries(${PROJECT_NAME} gumbo)
 # postgres client
 target_link_libraries(${PROJECT_NAME} pq)
 
-# postgres client
+# pthread
 target_link_libraries(${PROJECT_NAME} pthread)
 
-# postgres client
+# fmt
 target_link_libraries(${PROJECT_NAME} fmt)
+
+# libconfig++-dev
+target_link_libraries(${PROJECT_NAME} config++)

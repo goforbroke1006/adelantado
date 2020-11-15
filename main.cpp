@@ -30,9 +30,20 @@ MultiThreadLinksObserver(
 int main() {
     signal(SIGINT, signalHandler);
 
+    libconfig::Config *config = loadAppConfig("adelantado.cfg");
+
     std::cout << "Allowed CPUs: " << getCPUCount() << std::endl;
 
-    std::string dbConnStr = "postgresql://adelantado:adelantado@localhost:25432/adelantado?connect_timeout=10";
+    std::string dbUser = config->lookup("db_username");
+    std::string dbPass = config->lookup("db_password");
+    std::string dbHost = config->lookup("db_host");
+    int dbPort;
+    config->lookupValue("db_port", dbPort);
+    std::string dbName = config->lookup("db_name");
+    std::string dbConnStr =
+            "postgresql://" + dbUser + ":" + dbPass
+            + "@" + dbHost + ":" + std::to_string(dbPort) + "/" + dbName +
+            "?connect_timeout=10";
     PGconn *conn = PQconnectdb(dbConnStr.c_str());
     if (PQstatus(conn) != CONNECTION_OK) {
         fprintf(stderr, "Connection to database failed: %s",
@@ -41,8 +52,24 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
+    int queue_limit_priority,
+            queue_limit_unchecked,
+            queue_limit_checked, queue_pause;
+    config->lookupValue("queue_limit_priority", queue_limit_priority);
+    config->lookupValue("queue_limit_unchecked", queue_limit_unchecked);
+    config->lookupValue("queue_limit_checked", queue_limit_checked);
+    config->lookupValue("queue_pause", queue_pause);
 
     auto *linkStorage = new LinkStorage(conn);
+
+    auto initLinks = loadConfig("./links.txt");
+    for (const auto &il : initLinks) {
+        try {
+            linkStorage->registerLink(il);
+        } catch (DuplicateKeyException &ex) {
+            // ignore
+        }
+    }
 
     while (isReady) {
         auto start = std::chrono::high_resolution_clock::now();
@@ -50,10 +77,14 @@ int main() {
         auto priorityDomains = loadConfig("./domain-priority.txt");
 
         std::vector<std::string> links = linkStorage
-                ->loadUncheckedLinks(1000, priorityDomains);
-        if (links.empty()) {
-            links = linkStorage->loadCheckedLinks(1000);
-        }
+                ->loadUncheckedLinks(queue_limit_priority, priorityDomains);
+
+        auto uncheckedLinks = linkStorage->loadUncheckedLinks(queue_limit_unchecked);
+        links.insert(links.end(), uncheckedLinks.begin(), uncheckedLinks.end());
+
+        auto checkedLinks = linkStorage->loadCheckedLinks(queue_limit_checked);
+        links.insert(links.end(), checkedLinks.begin(), checkedLinks.end());
+
 
         auto *observerResult = new ObserverResult;
         MultiThreadLinksObserver(links, getCPUCount(), observerResult);
@@ -97,7 +128,7 @@ int main() {
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start).count();
         std::cout << "Spend time: " << (static_cast<double>(duration) / 1000) << " sec." << std::endl;
 
-        sleep(10);
+        sleep(queue_pause);
     }
 
     delete linkStorage;

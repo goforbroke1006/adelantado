@@ -191,6 +191,7 @@ void GumboPageScanner::getTextLinesRecursively(GumboNode *node, std::vector<std:
                 || node->v.element.tag == GUMBO_TAG_SPAN
         )
             ) {
+
         auto *title_text = (GumboNode *) node->v.element.children.data[0];
         if (nullptr != title_text && title_text->type == GUMBO_NODE_TEXT) {
             const char *line = title_text->v.text.text;
