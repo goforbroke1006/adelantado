@@ -2,12 +2,13 @@
 
 #include <csignal>
 #include "runtime.h"
-#include "repo.h"
 #include "app.h"
 #include "src/parser/AbstractPageScanner.h"
 #include "src/parser/GumboPageScanner.h"
 #include "src/parser/KeywordEntries.h"
 #include "cfgloader.h"
+#include "src/storage/LinkStorage.h"
+#include "src/storage/common.h"
 #include <postgresql/libpq-fe.h>
 
 bool isReady = true;
@@ -40,21 +41,25 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    Repo *repo = new Repo(conn);
+
+    auto *linkStorage = new LinkStorage(conn);
 
     while (isReady) {
         auto start = std::chrono::high_resolution_clock::now();
 
-        std::vector<std::string> links = repo->loadUncheckedLinks(1000);
+        auto priorityDomains = loadConfig("./domain-priority.txt");
+
+        std::vector<std::string> links = linkStorage
+                ->loadUncheckedLinks(1000, priorityDomains);
         if (links.empty()) {
-            links = repo->loadCheckedLinks(1000);
+            links = linkStorage->loadCheckedLinks(1000);
         }
 
         auto *observerResult = new ObserverResult;
         MultiThreadLinksObserver(links, getCPUCount(), observerResult);
 
         for (auto &res : observerResult->getMVisitedLinks()) {
-            repo->storeLink(
+            linkStorage->storeLink(
                     res.address,
                     res.metaTitle,
                     res.metaDescr,
@@ -77,7 +82,7 @@ int main() {
                 continue;
             }
             try {
-                repo->registerLink(queuedLink);
+                linkStorage->registerLink(queuedLink);
             } catch (DuplicateKeyException &ex) {
                 // TODO:
             } catch (std::runtime_error &ex) {
@@ -94,7 +99,7 @@ int main() {
         sleep(10);
     }
 
-    delete repo;
+    delete linkStorage;
 
     return statusCode;
 }

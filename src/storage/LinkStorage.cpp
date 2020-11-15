@@ -1,21 +1,16 @@
 //
-// Created by goforbroke on 10.11.2020.
+// Created by goforbroke on 15.11.2020.
 //
 
-#include "repo.h"
+#include "LinkStorage.h"
 
-#include <stdexcept>
-#include "modules/nlohmann-json/json.hpp"
+#include "common.h"
+#include "../../modules/nlohmann-json/json.hpp"
 
-bool isDuplicateError(const std::string &message) {
-    return message.find("duplicate key value violates unique constraint") != std::string::npos;
-}
-
-Repo::Repo(PGconn *conn)
+LinkStorage::LinkStorage(PGconn *conn)
         : mConnection(conn) {}
 
-void
-Repo::registerLink(const std::string &address) {
+void LinkStorage::registerLink(const std::string &address) {
     std::string sql = ""
                       "INSERT INTO links (address, meta_title, meta_description, body_title, body_keywords) "
                       "VALUES ('" + address + "', '', '', '', '{}')";
@@ -33,7 +28,7 @@ Repo::registerLink(const std::string &address) {
 }
 
 void
-Repo::storeLink(
+LinkStorage::storeLink(
         const std::string &address,
         const std::string &metaTitle,
         const std::string &metaDescr,
@@ -92,7 +87,42 @@ Repo::storeLink(
     PQclear(res);
 }
 
-std::vector<std::string> Repo::loadUncheckedLinks(unsigned int limit) {
+std::vector<std::string>
+LinkStorage::loadUncheckedLinks(unsigned int limit, const std::vector<std::string> &priorityDomains) {
+    std::string byDomainClause;
+    if (!priorityDomains.empty()) {
+        std::string enumStr;
+        for (const auto d : priorityDomains) {
+            enumStr = enumStr.append("'").append(d).append("'").append(", ");
+        }
+        enumStr = enumStr.substr(0, enumStr.length() - 2);
+
+        byDomainClause = " AND domain IN (" + enumStr + ") ";
+    }
+
+    std::string sql = std::string() +
+                      "SELECT address "
+                      + "FROM links WHERE checked_at IS NULL " + byDomainClause + " "
+                      + "LIMIT " + std::to_string(limit);
+    PGresult *res = PQexec(mConnection, sql.c_str());
+    if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+        fprintf(stderr, "failed: %s", PQerrorMessage(mConnection));
+    }
+
+    int rows = PQntuples(res);
+    PQgetvalue(res, 0, 0);
+
+    std::vector<std::string> links(rows);
+    for (int i = 0; i < rows; i++) {
+        links[i] = (PQgetvalue(res, i, 0));
+    }
+
+    PQclear(res);
+    return links;
+}
+
+std::vector<std::string>
+LinkStorage::loadUncheckedLinks(unsigned int limit) {
     std::string sql = "SELECT address FROM links WHERE checked_at IS NULL LIMIT " + std::to_string(limit);
     PGresult *res = PQexec(mConnection, sql.c_str());
     if (PQresultStatus(res) != PGRES_TUPLES_OK) {
@@ -111,7 +141,8 @@ std::vector<std::string> Repo::loadUncheckedLinks(unsigned int limit) {
     return links;
 }
 
-std::vector<std::string> Repo::loadCheckedLinks(unsigned int limit) {
+std::vector<std::string>
+LinkStorage::loadCheckedLinks(unsigned int limit) {
     std::string sql = "SELECT address FROM links ORDER BY checked_at ASC LIMIT " + std::to_string(limit);
     PGresult *res = PQexec(mConnection, sql.c_str());
     if (PQresultStatus(res) != PGRES_TUPLES_OK) {

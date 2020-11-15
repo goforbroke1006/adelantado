@@ -9,12 +9,13 @@ add_executable(${PROJECT_NAME} main.cpp
         runtime.h
         cfgloader.h
         html-filter.h html-filter.cpp
-        repo.h repo.cpp
         app.h app.cpp
 
         src/parser/AbstractPageScanner.h
         src/parser/GumboPageScanner.h src/parser/GumboPageScanner.cpp
         src/parser/KeywordEntries.h src/parser/KeywordEntries.cpp
+
+        src/storage/LinkStorage.h src/storage/LinkStorage.cpp
         )
 
 find_package(CURL)
@@ -34,6 +35,7 @@ add_subdirectory(tests)
 file(COPY keywords.txt DESTINATION ${CMAKE_BINARY_DIR})
 file(COPY links.txt DESTINATION ${CMAKE_BINARY_DIR})
 file(COPY keyword-ignore.txt DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY domain-priority.txt DESTINATION ${CMAKE_BINARY_DIR})
 
 # add google html parser
 target_link_libraries(${PROJECT_NAME} gumbo)
