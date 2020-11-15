@@ -1,0 +1,23 @@
+INSERT INTO links (address)
+VALUES ('https://stackoverflow.com/jobs/456218/senior-full-stack-developer-cloud-alm-works'),
+       ('https://stackoverflow.com/jobs/406197/senior-full-stack-engineer-remote-sector-labs'),
+       ('https://habr.com/ru/company/yandex/blog/493966/'),
+       ('https://habr.com/ru/post/347908/'),
+       ('https://habr.com/ru/post/217393/'),
+       ('https://habr.com/ru/company/oleg-bunin/blog/500626/'),
+       ('https://stackoverflow.com/questions/32153034/oneshell-not-working-properly-in-makefile'),
+       ('https://www.citilink.ru/catalog/mobile/notebooks/1385531/'),
+       ('https://www.citilink.ru/catalog/mobile/note_aks/podstavki_dlya_noutbukov/363708/'),
+       ('https://www.dns-shop.ru/catalog/17a892f816404e77/noutbuki/'),
+       ('https://stackoverflow.com/questions/20934311/c-template-stdvectoriterator-error'),
+       ('https://www.bookvoed.ru/'),
+       ('https://your.gms.tech/all?sp=dev_ops&l=relocate&s=150000'),
+       ('https://your.gms.tech/all?sp=dev_ops&l=relocate&s=150000&pl=golang'),
+       ('https://your.gms.tech/all?sp=dev_ops&l=relocate&s=150000&pl=golang&pl=c_cpp'),
+       ('https://your.gms.tech/all?sp=dev_ops&l=relocate&s=150000&pl=php'),
+       ('https://spb.hh.ru/search/vacancy?area=2&fromSearchLine=true&st=searchVacancy&text=Golang&from=suggest_post'),
+       ('https://spb.hh.ru/search/vacancy?clusters=true&area=2&enable_snippets=true&salary=&st=searchVacancy&text=C%2B%2B'),
+       ('https://spb.hh.ru/search/vacancy?clusters=true&area=2&enable_snippets=true&salary=&st=searchVacancy&text=Developer&from=suggest_post'),
+       ('https://spb.hh.ru/search/vacancy?clusters=true&area=2&enable_snippets=true&salary=&st=searchVacancy&text=Python&from=suggest_post'),
+       ('https://www.geeksforgeeks.org/')
+;

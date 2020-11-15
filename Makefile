@@ -32,5 +32,18 @@ compress/domain-priority.txt:
 	rm -f domain-priority.txt
 	mv domain-priority.txt.uniq domain-priority.txt
 
-local:
+dev/start:
 	docker-compose up -d
+
+dev/stop:
+	docker-compose stop
+
+.ONESHELL:
+dev/dump:
+	mkdir -p dump/
+	export PGPASSWORD=adelantado
+	pg_dump \
+		--host=localhost --port=25432 \
+		--username=adelantado \
+		--dbname=adelantado \
+		--data-only --file=dump/links.sql
