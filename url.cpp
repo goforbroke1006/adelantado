@@ -59,6 +59,7 @@ URL parseURL(const std::string &url) {
         if (letter == '?')
             break;
         result.path += letter;
+        ++nextSymbol;
     }
 
     result.query = url.substr(nextSymbol);

@@ -19,10 +19,11 @@ void signalHandler(int signum) {
     statusCode = signum;
 }
 
-ObserverResult *
+void
 MultiThreadLinksObserver(
         const std::vector<std::string> &links,
-        size_t multi
+        size_t multi,
+        ObserverResult *pResult
 );
 
 int main() {
@@ -49,8 +50,10 @@ int main() {
             links = repo->loadCheckedLinks(1000);
         }
 
-        ObserverResult *pResult = MultiThreadLinksObserver(links, getCPUCount());
-        for (auto &res : pResult->getMVisitedLinks()) {
+        auto *observerResult = new ObserverResult;
+        MultiThreadLinksObserver(links, getCPUCount(), observerResult);
+
+        for (auto &res : observerResult->getMVisitedLinks()) {
             repo->storeLink(
                     res.address,
                     res.metaTitle,
@@ -59,7 +62,7 @@ int main() {
                     res.bodyKeywords
             );
         }
-        for (auto &queuedLink : pResult->getMQueuedLinks()) {
+        for (auto &queuedLink : observerResult->getMQueuedLinks()) {
             if (queuedLink.rfind("http", 0) != 0) {
                 continue;
             }
@@ -82,6 +85,8 @@ int main() {
             }
         }
 
+        delete observerResult;
+
         auto finish = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start).count();
         std::cout << "Spend time: " << (static_cast<double>(duration) / 1000) << " sec." << std::endl;
@@ -89,18 +94,26 @@ int main() {
         sleep(10);
     }
 
+    delete repo;
+
     return statusCode;
 }
 
-ObserverResult *MultiThreadLinksObserver(const std::vector<std::string> &links, size_t multi) {
+void
+MultiThreadLinksObserver(
+        const std::vector<std::string> &links,
+        size_t multi,
+        ObserverResult *pResult
+) {
     VectorBulkSplitter splitter(links, multi);
     std::vector<std::thread> threads;
 
     auto keywordIgnore = loadConfig("./keyword-ignore.txt");
 
     auto func = [&](const std::vector<std::string> &linksChunk, ObserverResult *result) {
-        AbstractPageScanner *scanner = new GumboPageScanner();
         KeywordEntries keywordEntries(4, keywordIgnore);
+
+        AbstractPageScanner *scanner = new GumboPageScanner();
 
         for (const auto &link : linksChunk) {
             keywordEntries.clear();
@@ -119,7 +132,12 @@ ObserverResult *MultiThreadLinksObserver(const std::vector<std::string> &links, 
                 continue;
             }
 
-            scanner->load(response.content);
+            try {
+                scanner->load(response.content);
+            } catch (std::runtime_error &ex) {
+                // TODO:
+                continue;
+            }
 
             for (const auto &line : scanner->getBodyText()) {
                 keywordEntries.appendPhrase(line);
@@ -153,16 +171,13 @@ ObserverResult *MultiThreadLinksObserver(const std::vector<std::string> &links, 
         delete scanner;
     };
 
-    auto *observerResult = new ObserverResult;
 
     for (size_t thi = 0; thi < multi; ++thi) {
         std::vector<std::string> chunk = splitter.getNext();
-        std::thread thread(func, chunk, observerResult);
+        std::thread thread(func, chunk, pResult);
         threads.emplace_back(std::move(thread));
     }
     for (auto &th : threads) {
         th.join();
     }
-
-    return observerResult;
 }

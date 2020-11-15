@@ -15,7 +15,7 @@ class GumboPageScanner : public AbstractPageScanner {
 public:
     explicit GumboPageScanner();
 
-    virtual ~GumboPageScanner();
+    ~GumboPageScanner() override;
 
     void load(const std::string &content) override;
 
@@ -28,6 +28,7 @@ public:
     std::vector<std::string> getBodyText() override;
 
 private:
+    std::string mContent;
     GumboOutput *mOutput;
 
     void getBodyTitleRecursively(GumboNode *node, std::string &result);

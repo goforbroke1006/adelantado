@@ -68,6 +68,8 @@ INSERT INTO links (address) VALUES
 ('https://www.wsj.com/'),
 ('https://www.yahoo.com/news/'),
 ('http://www.finmarket.ru/'),
+('https://www.linux.org.ru/forum/admin/5167208'),
+('https://stackoverflow.com/jobs'),
 ('http://wwwrating.com/')
 
 ;

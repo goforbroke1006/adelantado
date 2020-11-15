@@ -11,6 +11,8 @@
 
 class AbstractPageScanner {
 public:
+    virtual ~AbstractPageScanner() = default;
+
     virtual void load(const std::string &content) = 0;
 
     virtual std::string getMetaTitle() = 0;

@@ -6,6 +6,26 @@
 
 #include "../url.h"
 
+TEST(url_parseURL_all, positive1) {
+    URL u = parseURL("https://www.cyberforum.ru/cpp-beginners/thread349754.html");
+
+    ASSERT_EQ("https", u.protocol);
+    ASSERT_EQ("www.cyberforum.ru", u.host);
+    ASSERT_EQ(0, u.port);
+    ASSERT_EQ("/cpp-beginners/thread349754.html", u.path);
+    ASSERT_EQ("", u.query);
+}
+
+TEST(url_parseURL_all, positive2) {
+    URL u = parseURL("https://www.cyberforum.ru/cpp-beginners/thread349754.html?hello=world");
+
+    ASSERT_EQ("https", u.protocol);
+    ASSERT_EQ("www.cyberforum.ru", u.host);
+    ASSERT_EQ(0, u.port);
+    ASSERT_EQ("/cpp-beginners/thread349754.html", u.path);
+    ASSERT_EQ("?hello=world", u.query);
+}
+
 TEST(url_parseURL_host, positive1) {
     ASSERT_EQ("google.com", parseURL("https://google.com/q/").host);
     ASSERT_EQ("en.wikipedia.org", parseURL("https://en.wikipedia.org/wiki/Main_Page").host);

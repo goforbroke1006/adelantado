@@ -7,24 +7,37 @@
 
 #include <cassert>
 
-GumboPageScanner::GumboPageScanner() {
-    mOutput = gumbo_parse("");
-}
+GumboPageScanner::GumboPageScanner()
+        : mOutput(nullptr), mContent("") {}
 
 GumboPageScanner::~GumboPageScanner() {
-    gumbo_destroy_output(&kGumboDefaultOptions, mOutput);
+    if (nullptr != mOutput) {
+        gumbo_destroy_output(&kGumboDefaultOptions, mOutput);
+        mOutput = nullptr;
+    }
 }
 
 void GumboPageScanner::load(const std::string &content) {
-    gumbo_destroy_output(&kGumboDefaultOptions, mOutput);
+    if (content.empty()) {
+        throw std::runtime_error("wrong html format");
+    }
+    if (nullptr != mOutput) {
+        gumbo_destroy_output(&kGumboDefaultOptions, mOutput);
+        mOutput = nullptr;
+    }
+
     mOutput = gumbo_parse(content.c_str());
+    if (nullptr == mOutput) {
+        throw std::runtime_error("wrong html format");
+    }
+
+    mContent = content;
 }
 
 std::string GumboPageScanner::getMetaTitle() {
-    std::string resultTitle;
-
-    assert(mOutput->root->type == GUMBO_NODE_ELEMENT);
-    assert(mOutput->root->v.element.children.length >= 2);
+    if (nullptr == mOutput || mOutput->root->type != GUMBO_NODE_ELEMENT) {
+        return "";
+    }
 
     const GumboVector *root_children = &mOutput->root->v.element.children;
     GumboNode *head = nullptr;
@@ -35,7 +48,10 @@ std::string GumboPageScanner::getMetaTitle() {
             break;
         }
     }
-    assert(head != nullptr);
+    if (nullptr == head)
+        return "";
+
+    std::string resultTitle;
 
     GumboVector *head_children = &head->v.element.children;
     for (int i = 0; i < head_children->length; ++i) {
@@ -56,8 +72,10 @@ std::string GumboPageScanner::getMetaTitle() {
 }
 
 std::string GumboPageScanner::getMetaDescription() {
-    assert(mOutput->root->type == GUMBO_NODE_ELEMENT);
-    assert(mOutput->root->v.element.children.length >= 2);
+    if (mOutput->root->type != GUMBO_NODE_ELEMENT)
+        return "";
+    if (mOutput->root->v.element.children.length < 2)
+        return "";
 
     const GumboVector *root_children = &mOutput->root->v.element.children;
     GumboNode *head = nullptr;
@@ -68,24 +86,25 @@ std::string GumboPageScanner::getMetaDescription() {
             break;
         }
     }
-    if (nullptr == head) return "";
+    if (nullptr == head)
+        return "";
 
     GumboVector *head_children = &head->v.element.children;
     for (int i = 0; i < head_children->length; ++i) {
         auto *child = (GumboNode *) head_children->data[i];
 
-        if (child->type == GUMBO_NODE_ELEMENT && child->v.element.tag == GUMBO_TAG_META) {
+        if (nullptr != child && child->type == GUMBO_NODE_ELEMENT && child->v.element.tag == GUMBO_TAG_META) {
 
             GumboAttribute *nameAttr = gumbo_get_attribute(&child->v.element.attributes, "name");
-            if (nullptr == nameAttr) {
+            if (nullptr == nameAttr)
                 continue;
-            }
+
             if (std::string("description") != nameAttr->value) continue;
 
             GumboAttribute *contentAttr = gumbo_get_attribute(&child->v.element.attributes, "content");
-            if (nullptr == contentAttr) {
+            if (nullptr == contentAttr)
                 continue;
-            }
+
             return contentAttr->value;
         }
     }
@@ -154,7 +173,11 @@ void GumboPageScanner::getBodyTitleRecursively(GumboNode *node, std::string &res
     const GumboVector *children = &node->v.element.children;
     for (int i = 0; i < children->length; ++i) {
         auto *child = (GumboNode *) children->data[i];
-        if (child->type == GUMBO_NODE_ELEMENT && node->v.element.children.length >= 1) {
+        if (
+                nullptr != child
+                && child->type == GUMBO_NODE_ELEMENT
+                && node->v.element.children.length >= 1
+                ) {
             getBodyTitleRecursively(child, result);
         }
     }
