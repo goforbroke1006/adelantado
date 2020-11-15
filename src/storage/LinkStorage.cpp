@@ -30,6 +30,7 @@ void LinkStorage::registerLink(const std::string &address) {
 void
 LinkStorage::storeLink(
         const std::string &address,
+        const std::string &domain,
         const std::string &metaTitle,
         const std::string &metaDescr,
         const std::string &bodyTitle,
@@ -38,6 +39,7 @@ LinkStorage::storeLink(
     std::string sql = ""
                       "INSERT INTO links ("
                       "   address, "
+                      "   domain, "
                       "   meta_title, "
                       "   meta_description, "
                       "   body_title, "
@@ -49,14 +51,16 @@ LinkStorage::storeLink(
                       "   $3, "
                       "   $4, "
                       "   $5, "
+                      "   $6, "
                       "   NOW() "
                       ")"
                       "ON CONFLICT (address) "
                       "DO UPDATE SET "
-                      "  meta_title       = $2, "
-                      "  meta_description = $3, "
-                      "  body_title       = $4, "
-                      "  body_keywords    = $5, "
+                      "  domain           = $2, "
+                      "  meta_title       = $3, "
+                      "  meta_description = $4, "
+                      "  body_title       = $5, "
+                      "  body_keywords    = $6, "
                       "  checked_at       = NOW() ";
 
     std::string keywordsStr;
@@ -70,9 +74,10 @@ LinkStorage::storeLink(
         keywordsStr = "{}";
     }
 
-    const int paramsSize = 5;
+    const int paramsSize = 6;
     const char *paramValues[paramsSize] = {
             address.c_str(),
+            domain.c_str(),
             metaTitle.c_str(),
             metaDescr.c_str(),
             bodyTitle.c_str(),

@@ -18,6 +18,7 @@ public:
 
     void storeLink(
             const std::string &address,
+            const std::string &domain,
             const std::string &metaTitle,
             const std::string &metaDescr,
             const std::string &bodyTitle,

@@ -61,6 +61,7 @@ int main() {
         for (auto &res : observerResult->getMVisitedLinks()) {
             linkStorage->storeLink(
                     res.address,
+                    res.domain,
                     res.metaTitle,
                     res.metaDescr,
                     res.bodyTitle,
@@ -68,7 +69,7 @@ int main() {
             );
         }
         for (auto &queuedLink : observerResult->getMQueuedLinks()) {
-            if (queuedLink.rfind("http", 0) != 0) {
+            if (queuedLink.rfind("http", 0) != 0) { // FIXME: workaround
                 continue;
             }
             if (queuedLink.find("'") != std::string::npos) { // FIXME: workaround
@@ -156,6 +157,7 @@ MultiThreadLinksObserver(
 
             result->pushVisited(Resource{
                     link,
+                    url.host,
                     scanner->getMetaTitle(),
                     scanner->getMetaDescription(),
                     scanner->getBodyTitle(),

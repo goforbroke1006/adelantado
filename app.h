@@ -58,6 +58,7 @@ private:
 
 struct Resource {
     std::string address;
+    std::string domain;
     std::string metaTitle;
     std::string metaDescr;
     std::string bodyTitle;
