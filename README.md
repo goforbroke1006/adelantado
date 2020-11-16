@@ -15,12 +15,11 @@ Search engine for fun.
 ```bash
 bash ./setup.linux.sh
 
-make build
-cp docker-compose.yml ./build/docker-compose.yml
-
-cd build
 docker-compose up -d
-sleep 30 # wait for docker-compose warm-up
+sleep 10 # wait for docker-compose warm-up
+
+make build
+cd build
 
 ./adelantado
 
