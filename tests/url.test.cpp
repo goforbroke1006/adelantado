@@ -4,7 +4,7 @@
 
 #include <gtest/gtest.h>
 
-#include "../url.h"
+#include "../src/url.h"
 
 TEST(url_parseURL_all, positive1) {
     URL u = parseURL("https://www.cyberforum.ru/cpp-beginners/thread349754.html");

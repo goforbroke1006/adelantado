@@ -4,7 +4,7 @@
 
 #include <gtest/gtest.h>
 
-#include "../app.h"
+#include "../src/app.h"
 
 TEST(VectorBulkSplitter_getNext, positive_round_size_without_remainder) {
     std::vector<int> s = {1, 2, 3, 4, 5, 6, 7, 8, 9};

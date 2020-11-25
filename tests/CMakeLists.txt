@@ -3,8 +3,8 @@ project(adelantado-tests)
 add_executable(${PROJECT_NAME}
         main.cpp
 
-        ../url.cpp url.test.cpp
-        ../app.cpp app.test.cpp
+        ../src/url.cpp url.test.cpp
+        ../src/app.cpp app.test.cpp
         ../src/parser/GumboPageScanner.cpp src/parser/GumboPageScanner.test.cpp
         ../src/parser/KeywordEntries.cpp src/parser/KeywordEntries.test.cpp
         )

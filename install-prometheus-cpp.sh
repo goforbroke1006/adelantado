@@ -25,3 +25,5 @@ ctest -V
 # install the libraries and headers
 sudo make install
 sudo ldconfig
+
+sudo rm -rf prometheus-cpp/

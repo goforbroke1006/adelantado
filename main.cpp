@@ -1,17 +1,17 @@
 #include <iostream>
 
 #include <csignal>
-#include "runtime.h"
-#include "app.h"
+#include "src/runtime.h"
+#include "src/app.h"
 #include "src/parser/AbstractPageScanner.h"
 #include "src/parser/GumboPageScanner.h"
 #include "src/parser/KeywordEntries.h"
-#include "cfgloader.h"
+#include "src/cfgloader.h"
 #include "src/storage/LinkStorage.h"
 #include "src/storage/common.h"
 #include <postgresql/libpq-fe.h>
 
-#include "helper.h"
+#include "src/helper.h"
 #include "src/Metrics.h"
 
 #include <prometheus/exposer.h>

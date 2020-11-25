@@ -9,7 +9,7 @@
 #include <string>
 #include <map>
 #include <thread>
-#include "src/HTTPClient.h"
+#include "HTTPClient.h"
 #include "url.h"
 #include "html-filter.h"
 #include <mutex>

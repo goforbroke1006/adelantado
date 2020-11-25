@@ -4,12 +4,12 @@ project(adelantado)
 set(CMAKE_CXX_STANDARD 14)
 
 add_executable(${PROJECT_NAME} main.cpp
-        url.h url.cpp
+        src/url.h src/url.cpp
         src/HTTPClient.h src/HTTPClient.cpp
-        runtime.h
-        cfgloader.h
-        html-filter.h html-filter.cpp
-        app.h app.cpp
+        src/runtime.h
+        src/cfgloader.h
+        src/html-filter.h src/html-filter.cpp
+        src/app.h src/app.cpp
 
         src/parser/AbstractPageScanner.h
         src/parser/GumboPageScanner.h src/parser/GumboPageScanner.cpp

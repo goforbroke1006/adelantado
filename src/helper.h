@@ -23,10 +23,8 @@ openDbConnection(libconfig::Config *config) {
             "?connect_timeout=10";
     PGconn *conn = PQconnectdb(dbConnStr.c_str());
     if (PQstatus(conn) != CONNECTION_OK) {
-        fprintf(stderr, "Connection to database failed: %s",
-                PQerrorMessage(conn));
         PQfinish(conn);
-        throw std::runtime_error("can't open db connection");
+        throw std::runtime_error(std::string() + "Connection to database failed: %s" + PQerrorMessage(conn));
     }
 
     return conn;
