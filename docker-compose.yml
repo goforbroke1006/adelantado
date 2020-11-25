@@ -1,12 +1,18 @@
 version: '3'
 
 services:
+  adelantado:
+    image: docker.io/goforbroke1006/adelantado:latest
+    volumes:
+      - .deploy/adelantado/adelantado.cfg:/code/build/adelantado.cfg
+    restart: always
+
   db:
     image: postgres:10
     environment:
-      POSTGRES_USER:      adelantado
-      POSTGRES_PASSWORD:  adelantado
-      POSTGRES_DB:        adelantado
+      POSTGRES_USER: adelantado
+      POSTGRES_PASSWORD: adelantado
+      POSTGRES_DB: adelantado
     ports:
       - 25432:5432
     volumes:
@@ -14,5 +20,49 @@ services:
       - ./migrations/1-schema.sql:/docker-entrypoint-initdb.d/1-schema.sql
       - ./migrations/2-data.sql:/docker-entrypoint-initdb.d/2-data.sql
 
+  grafana:
+    image: grafana/grafana:6.7.3
+    depends_on:
+      - prometheus
+    ports:
+      - 3000:3000
+    entrypoint: [ "sh", "/setup.sh" ]
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - grafana-prov:/etc/grafana/provisioning/
+      - ./.deploy/grafana/setup.sh:/setup.sh
+    environment:
+      - GF_SECURITY_ADMIN_USER=${ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    restart: always
+  prometheus:
+    image: prom/prometheus:v2.22.2
+    volumes:
+      - ./.deploy/prometheus/:/etc/prometheus/
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    ports:
+      - 9090:9090
+    restart: always
+  node-exporter:
+    image: prom/node-exporter:v1.0.1
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --collector.filesystem.ignored-mount-points
+      - ^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)
+    ports:
+      - 9100:9100
+    restart: always
+
+
 volumes:
   postgres-data:
+  grafana-data:
+  grafana-prov:
+#  prometheus-data:

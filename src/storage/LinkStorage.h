@@ -33,6 +33,8 @@ public:
 
     std::vector<std::string> loadCheckedLinks(unsigned int limit);
 
+    void postpone(const std::string &link);
+
 private:
     PGconn *mConnection;
 };

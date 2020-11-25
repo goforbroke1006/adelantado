@@ -62,7 +62,7 @@ void KeywordEntries::appendPhrase(std::string phrase) {
             continue;
         if (!atLeastOneLetter(w))
             continue;
-        if (mExclusions.contains(w))
+        if (mExclusions.count(w) > 0)
             continue;
 
         words.push_back(w);

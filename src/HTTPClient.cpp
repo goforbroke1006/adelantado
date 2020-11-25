@@ -4,6 +4,7 @@
 
 #include "HTTPClient.h"
 
+#include <stdexcept>
 #include <curl/curl.h>
 
 size_t writeFunc(char *ptr, size_t size, size_t nmemb, void *userdata) {
@@ -24,10 +25,13 @@ HTTPResponse HTTPClient::load(const std::string &url, unsigned int timeout) {
     curl_easy_setopt(handle, CURLOPT_TIMEOUT, timeout);
     curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 5);
 
+    curl_easy_setopt(handle, CURLOPT_SSL_VERIFYHOST, 0L);
+    curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
+
     CURLcode res = curl_easy_perform(handle);
     /* Check for errors */
     if (res != CURLE_OK) {
-        fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+        throw std::runtime_error("can't open '" + url + "' : " + curl_easy_strerror(res));
     }
 
     long response_code;

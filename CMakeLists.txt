@@ -1,11 +1,11 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.12)
 project(adelantado)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 14)
 
 add_executable(${PROJECT_NAME} main.cpp
         url.h url.cpp
-        HTTPClient.h HTTPClient.cpp
+        src/HTTPClient.h src/HTTPClient.cpp
         runtime.h
         cfgloader.h
         html-filter.h html-filter.cpp
@@ -16,6 +16,8 @@ add_executable(${PROJECT_NAME} main.cpp
         src/parser/KeywordEntries.h src/parser/KeywordEntries.cpp
 
         src/storage/LinkStorage.h src/storage/LinkStorage.cpp
+
+        src/Metrics.h src/Metrics.cpp
         )
 
 find_package(CURL)
@@ -48,7 +50,10 @@ target_link_libraries(${PROJECT_NAME} pq)
 target_link_libraries(${PROJECT_NAME} pthread)
 
 # fmt
-target_link_libraries(${PROJECT_NAME} fmt)
+#target_link_libraries(${PROJECT_NAME} fmt)
 
 # libconfig++-dev
 target_link_libraries(${PROJECT_NAME} config++)
+
+# prometheus-cpp
+target_link_libraries(${PROJECT_NAME} prometheus-cpp-pull prometheus-cpp-core)

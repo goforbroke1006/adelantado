@@ -1,27 +1,31 @@
-FROM debian:stretch
+FROM debian:buster
 
-RUN apt update
+RUN apt update --fix-missing
 
-RUN apt install -y git
+RUN apt install -y \
+    git curl build-essential cmake pkg-config
 
-RUN apt install -y libcurl4-openssl-dev
+COPY .deploy/fake-sudo.sh /usr/local/bin/sudo
+RUN chmod +x /usr/local/bin/sudo
 
-RUN apt-get install -y libtool                                                  && \
-    git clone -b v1.0.0 --depth 1 https://github.com/google/gumbo-parser.git    && \
-    cd gumbo-parser && \
-    ./autogen.sh    && \
-    ./configure     && \
-    make            && \
-    make install    && \
-    ldconfig        && \
-    cd ..           && \
-    rm -rf ./gumbo-parser
+WORKDIR /code
 
-RUN apt install -y libpq-dev
+COPY install-gtest.sh ./
+RUN bash ./install-gtest.sh
 
-RUN apt install -y libfmt-dev
+COPY install-gumbo.sh ./
+RUN bash ./install-gumbo.sh
 
-COPY ./adelantado /usr/local/bin/adelantado
-RUN chmod +x /usr/local/bin/adelantado
+COPY install-prometheus-cpp.sh ./
+RUN bash ./install-prometheus-cpp.sh
 
-ENTRYPOINT [ "adelantado" ]
+COPY setup.sh ./
+RUN bash ./setup.sh
+
+COPY ./ ./
+RUN ls -lah
+RUN make build
+
+WORKDIR /code/build
+
+ENTRYPOINT [ "/code/build/adelantado" ]

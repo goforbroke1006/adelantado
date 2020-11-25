@@ -32,8 +32,14 @@ compress/domain-priority.txt:
 	rm -f domain-priority.txt
 	mv domain-priority.txt.uniq domain-priority.txt
 
+image:
+	docker build -t docker.io/goforbroke1006/adelantado:latest .
+	docker login
+	docker push docker.io/goforbroke1006/adelantado:latest
+
 dev/start:
-	docker-compose up -d
+	docker-compose pull
+	docker-compose up -d --remove-orphans
 
 dev/stop:
 	docker-compose stop

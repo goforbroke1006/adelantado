@@ -13,11 +13,31 @@ Search engine for fun.
 ### How to use
 
 ```bash
+sudo apt install -y git curl gcc make cmake
+
+git clone git@github.com:goforbroke1006/adelantado.git
+cd ./adelantado/
+
+bash ./install-gtest.sh
+bash ./install-gumbo.sh
+bash ./install-prometheus-cpp.sh
 bash ./setup.linux.sh
+
+#git submodule init
+#git submodule update
 
 docker-compose up -d
 sleep 10 # wait for docker-compose warm-up
 
+x-www-browser http://localhost:9090/targets
+x-www-browser http://localhost:8080/metrics
+x-www-browser http://localhost:3000/ # admin admin
+
+```
+
+or
+
+```bash
 make build
 cd build
 
@@ -33,3 +53,8 @@ cd build
 * **keyword-ignore.txt** - this words will not used as keywords (pronouns, etc)
 * **keywords.txt** - in progress...
 * **links.txt** - initial links set, allow add new elements, solve cold start problem; load on every program start
+
+
+### Useful links 
+
+* https://prometheus.io/docs/introduction/first_steps/

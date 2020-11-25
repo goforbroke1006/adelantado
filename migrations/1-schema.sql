@@ -21,4 +21,7 @@ CREATE TABLE IF NOT EXISTS search
 ALTER TABLE links
     ADD COLUMN domain VARCHAR(1024) DEFAULT NULL;
 
+ALTER TABLE links
+    ADD COLUMN next_check_at TIMESTAMP DEFAULT NULL;
+
 CREATE INDEX idx_links_domain ON links (domain);

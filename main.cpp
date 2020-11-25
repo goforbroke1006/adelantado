@@ -11,6 +11,12 @@
 #include "src/storage/common.h"
 #include <postgresql/libpq-fe.h>
 
+#include "helper.h"
+#include "src/Metrics.h"
+
+#include <prometheus/exposer.h>
+#include <prometheus/registry.h>
+
 bool isReady = true;
 int statusCode = 0;
 
@@ -30,25 +36,21 @@ MultiThreadLinksObserver(
 int main() {
     signal(SIGINT, signalHandler);
 
+    prometheus::Exposer exposer{"0.0.0.0:8080"};
+    auto registry = std::make_shared<prometheus::Registry>();
+    // TODO: register metrics
+    Metrics::init("adelantado", registry.get());
+    exposer.RegisterCollectable(registry);
+
     libconfig::Config *config = loadAppConfig("adelantado.cfg");
 
     std::cout << "Allowed CPUs: " << getCPUCount() << std::endl;
 
-    std::string dbUser = config->lookup("db_username");
-    std::string dbPass = config->lookup("db_password");
-    std::string dbHost = config->lookup("db_host");
-    int dbPort;
-    config->lookupValue("db_port", dbPort);
-    std::string dbName = config->lookup("db_name");
-    std::string dbConnStr =
-            "postgresql://" + dbUser + ":" + dbPass
-            + "@" + dbHost + ":" + std::to_string(dbPort) + "/" + dbName +
-            "?connect_timeout=10";
-    PGconn *conn = PQconnectdb(dbConnStr.c_str());
-    if (PQstatus(conn) != CONNECTION_OK) {
-        fprintf(stderr, "Connection to database failed: %s",
-                PQerrorMessage(conn));
-        PQfinish(conn);
+    PGconn *conn;
+    try {
+        conn = openDbConnection(config);
+    } catch (std::exception &ex) {
+        std::cerr << ex.what() << std::endl;
         exit(EXIT_FAILURE);
     }
 
@@ -93,10 +95,8 @@ int main() {
             linkStorage->storeLink(
                     res.address,
                     res.domain,
-                    res.metaTitle,
-                    res.metaDescr,
-                    res.bodyTitle,
-                    res.bodyKeywords
+                    res.metaTitle, res.metaDescr,
+                    res.bodyTitle, res.bodyKeywords
             );
         }
         for (auto &queuedLink : observerResult->getMQueuedLinks()) {
@@ -122,6 +122,10 @@ int main() {
             }
         }
 
+        for (auto &failedLink : observerResult->getMFailedLinks()) {
+            linkStorage->postpone(failedLink);
+        }
+
         delete observerResult;
 
         auto finish = std::chrono::high_resolution_clock::now();
@@ -142,37 +146,58 @@ MultiThreadLinksObserver(
         size_t multi,
         ObserverResult *pResult
 ) {
-    VectorBulkSplitter splitter(links, multi);
+    VectorBulkSplitter<std::string> splitter(links, multi);
     std::vector<std::thread> threads;
 
     auto keywordIgnore = loadConfig("./keyword-ignore.txt");
 
     auto func = [&](const std::vector<std::string> &linksChunk, ObserverResult *result) {
-        KeywordEntries keywordEntries(4, keywordIgnore);
 
         AbstractPageScanner *scanner = new GumboPageScanner();
 
         for (const auto &link : linksChunk) {
+            auto __processPageStart = Metrics::now();
+
+            KeywordEntries keywordEntries(4, keywordIgnore);
             keywordEntries.clear();
 
             URL url;
             try {
                 url = parseURL(link);
-            } catch (std::runtime_error &err) {
-                // TODO: log errors
+            } catch (std::runtime_error &ex) {
+                std::cerr << ex.what() << std::endl;
+                Metrics::getFailedPageCount()->Increment();
+                pResult->pushFailed(link);
                 continue;
             }
 
-            const HTTPResponse &response = HTTPClient::load(link);
+            HTTPResponse response;
+            try {
+                response = HTTPClient::load(link);
+            } catch (std::exception &ex) {
+                std::cerr << ex.what() << std::endl;
+                Metrics::getFailedPageCount()->Increment();
+                pResult->pushFailed(link);
+                continue;
+            }
 
             if (response.statusCode >= 400) {
+                std::cerr << link << " : status code " << response.statusCode << std::endl;
+                Metrics::getFailedPageCount()->Increment();
+                pResult->pushFailed(link);
                 continue;
             }
 
+            Metrics::getDownloadPageCount()->Increment();
+            Metrics::getDownloadPageDuration()->Increment(Metrics::since(__processPageStart).count());
+
+            auto __parsePageStart = Metrics::now();
             try {
                 scanner->load(response.content);
             } catch (std::runtime_error &ex) {
-                // TODO:
+                std::cerr << link << " : " << ex.what() << std::endl;
+                Metrics::getFailedPageCount()->Increment();
+                pResult->pushFailed(link);
                 continue;
             }
 
@@ -183,6 +208,8 @@ MultiThreadLinksObserver(
 
             std::map<std::string, unsigned int> keywordsMap = keywordEntries.getTop();
             if (keywordsMap.empty()) {
+                Metrics::getFailedPageCount()->Increment();
+                pResult->pushFailed(link);
                 continue;
             }
 
@@ -203,6 +230,8 @@ MultiThreadLinksObserver(
             } else {
 //                std::cout << link << " : no links" << std::endl;
             }
+            Metrics::getParsePageDuration()->Increment(Metrics::since(__parsePageStart).count());
+            Metrics::getProcessingPageTotalDuration()->Increment(Metrics::since(__processPageStart).count());
 
         }
 

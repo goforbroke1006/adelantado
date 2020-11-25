@@ -9,7 +9,7 @@
 #include <string>
 #include <map>
 #include <thread>
-#include "HTTPClient.h"
+#include "src/HTTPClient.h"
 #include "url.h"
 #include "html-filter.h"
 #include <mutex>
@@ -80,6 +80,11 @@ public:
         );
     }
 
+    void pushFailed(const std::string &url) {
+        std::lock_guard<std::mutex> guard(mFailedLinksMX);
+        mFailedLinks.push_back(url);
+    }
+
     const std::vector<Resource> &getMVisitedLinks() const {
         return mVisitedLinks;
     }
@@ -88,13 +93,20 @@ public:
         return mQueuedLinks;
     }
 
+    const std::vector<std::string> &getMFailedLinks() const {
+        return mFailedLinks;
+    }
+
 private:
     std::vector<Resource> mVisitedLinks;
     std::mutex mVisitedLinksMX;
+
     std::vector<std::string> mQueuedLinks;
     std::mutex mQueuedLinksMX;
-};
 
+    std::vector<std::string> mFailedLinks;
+    std::mutex mFailedLinksMX;
+};
 
 
 #endif //ADELANTADO_APP_H
