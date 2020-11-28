@@ -4,3 +4,6 @@
 [submodule "modules/nlohmann/json"]
 	path = modules/nlohmann/json
 	url = https://github.com/nlohmann/json.git
+[submodule "modules/goforbroke1006/cpp-logger"]
+	path = modules/goforbroke1006/cpp-logger
+	url = https://github.com/goforbroke1006/cpp-logger.git

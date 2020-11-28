@@ -10,6 +10,7 @@
 #include <fstream>
 #include <stdexcept>
 #include <libconfig.h++>
+#include <logger.h>
 
 inline
 libconfig::Config *loadAppConfig(const std::string &filename) {
@@ -18,8 +19,7 @@ libconfig::Config *loadAppConfig(const std::string &filename) {
         cfg->readFile(filename.c_str());
     }
     catch (const libconfig::FileIOException &fioex) {
-        std::cerr << "I/O error while reading file." << std::endl;
-        exit(EXIT_FAILURE); // TODO: fix
+        Logger_Critical_F("can't open config file '%s': %s", filename.c_str(), fioex.what());
     }
     return cfg;
 }

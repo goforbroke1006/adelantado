@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <thread>
+#include <logger.h>
 
 #include "MultiThreadPageScrapper.h"
 #include "VectorBulkSplitter.h"
@@ -44,7 +45,8 @@ ObserverResult *MultiThreadPageScrapper::scrape() const {
             try {
                 url = parseURL(link);
             } catch (std::runtime_error &ex) {
-                std::cerr << ex.what() << std::endl;
+                Logger_Warn_F("validate url '%s' failed: %s", link.c_str(), ex.what());
+
                 Metrics::getFailedPageCount()->Increment();
                 result->pushFailed(link);
                 continue;
@@ -54,9 +56,20 @@ ObserverResult *MultiThreadPageScrapper::scrape() const {
             try {
                 response = HTTPClient::load(link);
             } catch (std::exception &ex) {
-                std::cerr << ex.what() << std::endl;
+                Logger_Warn_F("download '%s' failed: %s", link.c_str(), ex.what());
                 Metrics::getFailedPageCount()->Increment();
-                response.statusCode = -1;
+
+                {
+                    Resource resource;
+
+                    resource.address = link;
+                    resource.domain = url.host;
+                    resource.statusCode = -1;
+
+                    result->pushVisited(resource);
+                }
+
+                continue;
             }
 
             Metrics::getDownloadPageCount()->Increment();
@@ -66,7 +79,8 @@ ObserverResult *MultiThreadPageScrapper::scrape() const {
             try {
                 scanner->load(response.content);
             } catch (std::runtime_error &ex) {
-                std::cerr << link << " : " << ex.what() << std::endl;
+                Logger_Warn_F("parse '%s' failed: %s", link.c_str(), ex.what());
+
                 Metrics::getFailedPageCount()->Increment();
                 result->pushFailed(link);
                 continue;
@@ -104,14 +118,12 @@ ObserverResult *MultiThreadPageScrapper::scrape() const {
             resource.charset = ""; // TODO:
 
             result->pushVisited(resource);
+            Logger_Info_F("'%s' ok", link.c_str());
 
             std::vector<std::string> contentLinks = getLinkAddresses(response.content);
             contentLinks = normalizeHrefsToLinks(contentLinks, url.protocol, url.host);
             if (!contentLinks.empty()) {
                 result->appendLinks(contentLinks);
-//                std::cout << link << " : ok" << std::endl;
-            } else {
-//                std::cout << link << " : no links" << std::endl;
             }
             Metrics::getParsePageDuration()->Increment(Metrics::since(__parsePageStart).count());
             Metrics::getProcessingPageTotalDuration()->Increment(Metrics::since(__processPageStart).count());

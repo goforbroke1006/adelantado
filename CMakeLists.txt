@@ -7,8 +7,7 @@ include_directories(
         modules/goforbroke1006/goxx-std
         modules/nlohmann/json/single_include
 )
-add_executable(${PROJECT_NAME} main.cpp
-        src/url.h src/url.cpp
+set(SOURCES  src/url.h src/url.cpp
         src/HTTPClient.h src/HTTPClient.cpp
         src/runtime.h
         src/cfgloader.h
@@ -23,8 +22,14 @@ add_executable(${PROJECT_NAME} main.cpp
         src/Metrics.h src/Metrics.cpp
         src/scrape/MultiThreadPageScrapper.h src/scrape/MultiThreadPageScrapper.cpp
         src/scrape/ObserverResult.h src/scrape/ObserverResult.cpp
-        src/scrape/VectorBulkSplitter.h
-        )
+        src/scrape/VectorBulkSplitter.h)
+
+
+include_directories(modules/goforbroke1006/cpp-logger)
+set(SOURCES ${SOURCES} modules/goforbroke1006/cpp-logger/logger.cpp)
+
+
+add_executable(${PROJECT_NAME} main.cpp ${SOURCES})
 
 find_package(CURL)
 if (CURL_FOUND)
@@ -54,9 +59,6 @@ target_link_libraries(${PROJECT_NAME} pq)
 
 # pthread
 target_link_libraries(${PROJECT_NAME} pthread)
-
-# fmt
-#target_link_libraries(${PROJECT_NAME} fmt)
 
 # libconfig++-dev
 target_link_libraries(${PROJECT_NAME} config++)

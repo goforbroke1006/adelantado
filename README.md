@@ -61,5 +61,6 @@ cd build
 
 ### Modules
 
-* git submodule add -- https://github.com/goforbroke1006/goxx-std.git modules/goforbroke1006/goxx-std
-* git submodule add -- https://github.com/nlohmann/json.git           modules/nlohmann/json
+* git submodule add -- https://github.com/goforbroke1006/goxx-std.git   modules/goforbroke1006/goxx-std
+* git submodule add -- https://github.com/goforbroke1006/cpp-logger.git modules/goforbroke1006/cpp-logger
+* git submodule add -- https://github.com/nlohmann/json.git             modules/nlohmann/json

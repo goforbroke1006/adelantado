@@ -15,6 +15,8 @@
 #include <prometheus/exposer.h>
 #include <prometheus/registry.h>
 
+#include <logger.h>
+
 bool isReady = true;
 int statusCode = 0;
 
@@ -34,13 +36,13 @@ int main() {
 
     libconfig::Config *config = loadAppConfig("adelantado.cfg");
 
-    std::cout << "Allowed CPUs: " << getCPUCount() << std::endl;
+    Logger_Debug_F("allowed CPUs: %d", getCPUCount());
 
     PGconn *conn;
     try {
         conn = openDbConnection(config);
     } catch (std::exception &ex) {
-        std::cerr << ex.what() << std::endl;
+        Logger_Error_F("open db connection failed: %s", ex.what());
         exit(EXIT_FAILURE);
     }
 
@@ -61,7 +63,7 @@ int main() {
         } catch (DuplicateKeyException &ex) {
             // ignore
         } catch (std::exception &ex) {
-            std::cerr << il << " : " << ex.what() << std::endl;
+            Logger_Error_F("can't register new link '%s': %s", il.c_str(), ex.what());
         }
     }
 
@@ -87,7 +89,7 @@ int main() {
             try {
                 linkStorage->storeLink(res);
             } catch (std::exception &ex) {
-                std::cerr << res.address << " : " << ex.what() << std::endl;
+                Logger_Error_F("can't visited link '%s': %s", res.address.c_str(), ex.what());
             }
         }
         for (auto &queuedLink : observerResult->getMQueuedLinks()) {
@@ -96,7 +98,7 @@ int main() {
             } catch (DuplicateKeyException &ex) {
                 // TODO:
             } catch (std::runtime_error &ex) {
-                std::cerr << queuedLink << " : " << ex.what() << std::endl;
+                Logger_Error_F("can't register link '%s': %s", queuedLink.c_str(), ex.what());
             }
         }
 
