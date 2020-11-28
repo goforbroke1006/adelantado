@@ -61,7 +61,7 @@ void LinkStorage::storeLink(const Resource &resource) {
                       "  og_title = $8, og_image = $9, og_description = $10, og_site_name = $11, "
                       "  last_status_code  = $12, "
                       "  page_content_size = $13, "
-                      "  charset           = $14 ";
+                      "  charset           = $14;";
 
     std::string metaKeywordsStr = goxx_std::strings::join(resource.metaKeywords, ", ");
 

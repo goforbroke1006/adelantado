@@ -2,7 +2,6 @@
 // Created by goforbroke on 28.11.2020.
 //
 
-#include <iostream>
 #include <thread>
 #include <logger.h>
 
@@ -102,6 +101,7 @@ ObserverResult *MultiThreadPageScrapper::scrape() const {
 
             resource.address = link;
             resource.domain = url.host;
+            //
             resource.metaTitle = scanner->getMetaTitle();
             resource.metaDescr = scanner->getMetaDescription();
             resource.metaKeywords = scanner->getMetaKeywords();
