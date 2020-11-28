@@ -10,6 +10,8 @@ services:
       - ./keywords.txt:/app/keywords.txt
       - ./links.txt:/app/links.txt
     restart: always
+    ports:
+      - 8080:8080
 
   db:
     image: postgres:10
@@ -45,6 +47,7 @@ services:
       - ./.deploy/prometheus/:/etc/prometheus/
     command:
       - --config.file=/etc/prometheus/prometheus.yml
+      - --web.enable-lifecycle
     ports:
       - 9090:9090
     restart: always

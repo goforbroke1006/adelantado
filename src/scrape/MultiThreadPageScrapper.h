@@ -25,6 +25,10 @@ public:
 private:
     const std::vector<std::string> &links;
     const size_t multi;
+
+    static void shortify(std::string &target, size_t len);
+
+    static void shortify(std::vector<std::string> &target, size_t len);
 };
 
 

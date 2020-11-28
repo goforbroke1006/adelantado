@@ -24,9 +24,13 @@ public:
 
     static prometheus::Gauge *getParsePageDuration();
 
+    static prometheus::Gauge *getRegisterLinkDuration();
+
+    static prometheus::Counter *getRegisterLinkCount();
+
     static std::chrono::milliseconds now();
 
-    static std::chrono::milliseconds since(std::chrono::milliseconds start);
+    static long long since(std::chrono::milliseconds start);
 
 private:
     static prometheus::Counter *mDownloadPageCount;
@@ -34,6 +38,9 @@ private:
     static prometheus::Gauge *mProcessingPageTotalDuration;
     static prometheus::Gauge *mDownloadPageDuration;
     static prometheus::Gauge *mParsePageDuration;
+
+    static prometheus::Gauge *mRegisterLinkDuration;
+    static prometheus::Counter *mRegisterLinkCount;
 };
 
 #endif //ADELANTADO_METRICS_H

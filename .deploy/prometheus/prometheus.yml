@@ -10,5 +10,6 @@ scrape_configs:
   - job_name: prometheus
     static_configs:
       - targets:
-        - 'adelantado:8080'
+        - '192.168.0.211:8080'
+        - '192.168.0.88:8080'
         - 'localhost:9090'

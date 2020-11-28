@@ -59,7 +59,10 @@ int main() {
     auto initLinks = loadConfig("./links.txt");
     for (const auto &il : initLinks) {
         try {
+            auto regLinkStart = Metrics::now();
             linkStorage->registerLink(il);
+            Metrics::getRegisterLinkDuration()->Increment(Metrics::since(regLinkStart));
+            Metrics::getRegisterLinkCount()->Increment();
         } catch (DuplicateKeyException &ex) {
             // ignore
         } catch (std::exception &ex) {
@@ -94,7 +97,10 @@ int main() {
         }
         for (auto &queuedLink : observerResult->getMQueuedLinks()) {
             try {
+                auto regLinkStart = Metrics::now();
                 linkStorage->registerLink(queuedLink);
+                Metrics::getRegisterLinkDuration()->Increment(Metrics::since(regLinkStart));
+                Metrics::getRegisterLinkCount()->Increment();
             } catch (DuplicateKeyException &ex) {
                 // TODO:
             } catch (std::runtime_error &ex) {

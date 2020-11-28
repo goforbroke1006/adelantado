@@ -10,6 +10,9 @@ prometheus::Gauge *Metrics::mProcessingPageTotalDuration = nullptr;
 prometheus::Gauge *Metrics::mDownloadPageDuration = nullptr;
 prometheus::Gauge *Metrics::mParsePageDuration = nullptr;
 
+prometheus::Gauge *Metrics::mRegisterLinkDuration = nullptr;
+prometheus::Counter *Metrics::mRegisterLinkCount = nullptr;
+
 void Metrics::init(const std::string &serviceName, prometheus::Registry *registry) {
     std::string prefix = serviceName + "_";
 
@@ -42,13 +45,20 @@ void Metrics::init(const std::string &serviceName, prometheus::Registry *registr
             .Help("How many time spend to parse page")
 //                .Labels({{"label", "value"}})
             .Register(*registry).Add({});
+
+    mRegisterLinkDuration = &prometheus::BuildGauge()
+            .Name(prefix + "register_link_duration")
+            .Help("How many time spend to register new link")
+            .Register(*registry).Add({});
+    mRegisterLinkCount = &prometheus::BuildCounter()
+            .Name(prefix + "register_link_count")
+            .Help("How many links were registered")
+            .Register(*registry).Add({});
 }
 
 prometheus::Counter *Metrics::getDownloadPageCount() { return mDownloadPageCount; }
 
-prometheus::Counter *Metrics::getFailedPageCount() {
-    return mFailedPageCount;
-}
+prometheus::Counter *Metrics::getFailedPageCount() { return mFailedPageCount; }
 
 prometheus::Gauge *Metrics::getProcessingPageTotalDuration() { return mProcessingPageTotalDuration; }
 
@@ -56,12 +66,16 @@ prometheus::Gauge *Metrics::getDownloadPageDuration() { return mDownloadPageDura
 
 prometheus::Gauge *Metrics::getParsePageDuration() { return mParsePageDuration; }
 
+prometheus::Gauge *Metrics::getRegisterLinkDuration() { return mRegisterLinkDuration; }
+
+prometheus::Counter *Metrics::getRegisterLinkCount() { return mRegisterLinkCount; }
+
 std::chrono::milliseconds Metrics::now() {
     return std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::system_clock::now().time_since_epoch()
     );
 }
 
-std::chrono::milliseconds Metrics::since(std::chrono::milliseconds start) {
-    return now() - start;
+long long Metrics::since(std::chrono::milliseconds start) {
+    return (now() - start).count();
 }

@@ -35,7 +35,7 @@ ObserverResult *MultiThreadPageScrapper::scrape() const {
         AbstractPageScanner *scanner = new GumboPageScanner();
 
         for (const auto &link : linksChunk) {
-            auto __processPageStart = Metrics::now();
+            auto processPageStart = Metrics::now();
 
             KeywordEntries keywordEntries(4, keywordIgnore);
             keywordEntries.clear();
@@ -72,9 +72,9 @@ ObserverResult *MultiThreadPageScrapper::scrape() const {
             }
 
             Metrics::getDownloadPageCount()->Increment();
-            Metrics::getDownloadPageDuration()->Increment(Metrics::since(__processPageStart).count());
+            Metrics::getDownloadPageDuration()->Increment(Metrics::since(processPageStart));
 
-            auto __parsePageStart = Metrics::now();
+            auto parsePageStart = Metrics::now();
             try {
                 scanner->load(response.content);
             } catch (std::runtime_error &ex) {
@@ -117,6 +117,19 @@ ObserverResult *MultiThreadPageScrapper::scrape() const {
             resource.pageContentSize = response.content.size();
             resource.charset = ""; // TODO:
 
+
+            //
+            
+            shortify(resource.metaTitle, 2048);
+            shortify(resource.metaDescr, 2048);
+            shortify(resource.metaKeywords, 15);
+            shortify(resource.bodyTitle, 2048);
+
+            shortify(resource.ogTitle, 2048);
+            shortify(resource.ogImage, 2048);
+            shortify(resource.ogDescription, 2048);
+            shortify(resource.ogSiteName, 2048);
+
             result->pushVisited(resource);
             Logger_Info_F("'%s' ok", link.c_str());
 
@@ -125,8 +138,8 @@ ObserverResult *MultiThreadPageScrapper::scrape() const {
             if (!contentLinks.empty()) {
                 result->appendLinks(contentLinks);
             }
-            Metrics::getParsePageDuration()->Increment(Metrics::since(__parsePageStart).count());
-            Metrics::getProcessingPageTotalDuration()->Increment(Metrics::since(__processPageStart).count());
+            Metrics::getParsePageDuration()->Increment(Metrics::since(parsePageStart));
+            Metrics::getProcessingPageTotalDuration()->Increment(Metrics::since(processPageStart));
 
         }
 
@@ -144,4 +157,14 @@ ObserverResult *MultiThreadPageScrapper::scrape() const {
     }
 
     return result;
+}
+
+void MultiThreadPageScrapper::shortify(std::string &target, size_t len) {
+    if (target.length() > len)
+        target.resize(len);
+}
+
+void MultiThreadPageScrapper::shortify(std::vector<std::string> &target, size_t len) {
+    if (target.size() > len)
+        target.resize(len);
 }
