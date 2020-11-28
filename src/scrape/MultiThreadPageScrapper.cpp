@@ -56,16 +56,8 @@ ObserverResult *MultiThreadPageScrapper::scrape() const {
             } catch (std::exception &ex) {
                 std::cerr << ex.what() << std::endl;
                 Metrics::getFailedPageCount()->Increment();
-                result->pushFailed(link);
-                continue;
+                response.statusCode = -1;
             }
-
-//            if (response.statusCode >= 400) {
-//                std::cerr << link << " : status code " << response.statusCode << std::endl;
-//                Metrics::getFailedPageCount()->Increment();
-////                result->pushFailed(link);
-////                continue;
-//            }
 
             Metrics::getDownloadPageCount()->Increment();
             Metrics::getDownloadPageDuration()->Increment(Metrics::since(__processPageStart).count());
