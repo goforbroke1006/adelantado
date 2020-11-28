@@ -50,6 +50,14 @@ dev/dump:
 	export PGPASSWORD=adelantado
 	pg_dump \
 		--host=localhost --port=25432 \
-		--username=adelantado \
-		--dbname=adelantado \
-		--data-only --file=dump/links.sql
+		--username=adelantado         \
+		--dbname=adelantado           \
+		--data-only                   \
+		--rows-per-insert=1000        \
+		--on-conflict-do-nothing      \
+		--file=dump/links.sql
+
+.ONESHELL:
+dev/restore:
+	export PGPASSWORD=adelantado
+	psql -h localhost -p 25432 -U adelantado adelantado < dump/links.sql
