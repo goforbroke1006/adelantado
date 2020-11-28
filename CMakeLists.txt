@@ -3,13 +3,16 @@ project(adelantado)
 
 set(CMAKE_CXX_STANDARD 14)
 
+include_directories(
+        modules/goforbroke1006/goxx-std
+        modules/nlohmann/json/single_include
+)
 add_executable(${PROJECT_NAME} main.cpp
         src/url.h src/url.cpp
         src/HTTPClient.h src/HTTPClient.cpp
         src/runtime.h
         src/cfgloader.h
         src/html-filter.h src/html-filter.cpp
-        src/app.h src/app.cpp
 
         src/parser/AbstractPageScanner.h
         src/parser/GumboPageScanner.h src/parser/GumboPageScanner.cpp
@@ -18,6 +21,9 @@ add_executable(${PROJECT_NAME} main.cpp
         src/storage/LinkStorage.h src/storage/LinkStorage.cpp
 
         src/Metrics.h src/Metrics.cpp
+        src/scrape/MultiThreadPageScrapper.h src/scrape/MultiThreadPageScrapper.cpp
+        src/scrape/ObserverResult.h src/scrape/ObserverResult.cpp
+        src/scrape/VectorBulkSplitter.h
         )
 
 find_package(CURL)

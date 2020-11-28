@@ -1,0 +1,6 @@
+[submodule "modules/goforbroke1006/goxx-std"]
+	path = modules/goforbroke1006/goxx-std
+	url = https://github.com/goforbroke1006/goxx-std.git
+[submodule "modules/nlohmann/json"]
+	path = modules/nlohmann/json
+	url = https://github.com/nlohmann/json.git

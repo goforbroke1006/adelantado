@@ -12,9 +12,13 @@ TEST(GumboPageScanner_all, positive_simplest) {
 <html>
 <head>
   <title>Hello Gumbo, thank Google!</title>
-
   <meta name="description" content="Some short page descRipTioN!!!">
-<head>
+  <meta name="keywords" content="glsl, hlsl, metal, generator">
+
+    <meta property="og:title" content="How quickly to create ..."/>
+    <meta property="og:image" content="https://vaaalera.org/uploads/image.png"/>
+    <meta property="og:description" content="How to create even in Calendar"/>
+</head>
 
 <body>
     <h1>Some title some title!</h1>
@@ -34,7 +38,12 @@ TEST(GumboPageScanner_all, positive_simplest) {
 
     ASSERT_EQ("Hello Gumbo, thank Google!", scanner->getMetaTitle());
     ASSERT_EQ("Some short page descRipTioN!!!", scanner->getMetaDescription());
+    ASSERT_EQ(std::vector<std::string>({"glsl", "hlsl", "metal", "generator"}), scanner->getMetaKeywords());
     ASSERT_EQ("Some title some title!", scanner->getBodyTitle());
+
+    ASSERT_EQ("How quickly to create ...", scanner->getOGTitle());
+    ASSERT_EQ("https://vaaalera.org/uploads/image.png", scanner->getOGImage());
+    ASSERT_EQ("How to create even in Calendar", scanner->getOGDescription());
 
     ASSERT_EQ(2, scanner->getBodyText().size());
 }

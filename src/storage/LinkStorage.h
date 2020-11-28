@@ -9,6 +9,7 @@
 #include <vector>
 #include <map>
 #include <postgresql/libpq-fe.h>
+#include "../domain.h"
 
 class LinkStorage {
 public:
@@ -16,14 +17,7 @@ public:
 
     void registerLink(const std::string &address);
 
-    void storeLink(
-            const std::string &address,
-            const std::string &domain,
-            const std::string &metaTitle,
-            const std::string &metaDescr,
-            const std::string &bodyTitle,
-            const std::map<std::string, unsigned int> &keywords
-    );
+    void storeLink(const Resource &resource);
 
     std::vector<std::string> loadUncheckedLinks(
             unsigned int limit,

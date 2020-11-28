@@ -2,10 +2,6 @@
 
 #include <csignal>
 #include "src/runtime.h"
-#include "src/app.h"
-#include "src/parser/AbstractPageScanner.h"
-#include "src/parser/GumboPageScanner.h"
-#include "src/parser/KeywordEntries.h"
 #include "src/cfgloader.h"
 #include "src/storage/LinkStorage.h"
 #include "src/storage/common.h"
@@ -13,6 +9,8 @@
 
 #include "src/helper.h"
 #include "src/Metrics.h"
+#include "src/scrape/ObserverResult.h"
+#include "src/scrape/MultiThreadPageScrapper.h"
 
 #include <prometheus/exposer.h>
 #include <prometheus/registry.h>
@@ -26,19 +24,11 @@ void signalHandler(int signum) {
     statusCode = signum;
 }
 
-void
-MultiThreadLinksObserver(
-        const std::vector<std::string> &links,
-        size_t multi,
-        ObserverResult *pResult
-);
-
 int main() {
     signal(SIGINT, signalHandler);
 
     prometheus::Exposer exposer{"0.0.0.0:8080"};
     auto registry = std::make_shared<prometheus::Registry>();
-    // TODO: register metrics
     Metrics::init("adelantado", registry.get());
     exposer.RegisterCollectable(registry);
 
@@ -70,6 +60,8 @@ int main() {
             linkStorage->registerLink(il);
         } catch (DuplicateKeyException &ex) {
             // ignore
+        } catch (std::exception &ex) {
+            std::cerr << il << " : " << ex.what() << std::endl;
         }
     }
 
@@ -88,37 +80,23 @@ int main() {
         links.insert(links.end(), checkedLinks.begin(), checkedLinks.end());
 
 
-        auto *observerResult = new ObserverResult;
-        MultiThreadLinksObserver(links, getCPUCount(), observerResult);
+        auto *pScrapper = new MultiThreadPageScrapper(links, getCPUCount());
+        auto *observerResult = pScrapper->scrape();
 
         for (auto &res : observerResult->getMVisitedLinks()) {
-            linkStorage->storeLink(
-                    res.address,
-                    res.domain,
-                    res.metaTitle, res.metaDescr,
-                    res.bodyTitle, res.bodyKeywords
-            );
+            try {
+                linkStorage->storeLink(res);
+            } catch (std::exception &ex) {
+                std::cerr << res.address << " : " << ex.what() << std::endl;
+            }
         }
         for (auto &queuedLink : observerResult->getMQueuedLinks()) {
-            if (queuedLink.rfind("http", 0) != 0) { // FIXME: workaround
-                continue;
-            }
-            if (queuedLink.find("'") != std::string::npos) { // FIXME: workaround
-                continue;
-            }
-            if (
-                    queuedLink.find(" ") != std::string::npos
-                    || queuedLink.find("<") != std::string::npos
-                    || queuedLink.find(">") != std::string::npos
-                    ) {
-                continue;
-            }
             try {
                 linkStorage->registerLink(queuedLink);
             } catch (DuplicateKeyException &ex) {
                 // TODO:
             } catch (std::runtime_error &ex) {
-                std::cerr << ex.what() << std::endl;
+                std::cerr << queuedLink << " : " << ex.what() << std::endl;
             }
         }
 
@@ -138,113 +116,4 @@ int main() {
     delete linkStorage;
 
     return statusCode;
-}
-
-void
-MultiThreadLinksObserver(
-        const std::vector<std::string> &links,
-        size_t multi,
-        ObserverResult *pResult
-) {
-    VectorBulkSplitter<std::string> splitter(links, multi);
-    std::vector<std::thread> threads;
-
-    auto keywordIgnore = loadConfig("./keyword-ignore.txt");
-
-    auto func = [&](const std::vector<std::string> &linksChunk, ObserverResult *result) {
-
-        AbstractPageScanner *scanner = new GumboPageScanner();
-
-        for (const auto &link : linksChunk) {
-            auto __processPageStart = Metrics::now();
-
-            KeywordEntries keywordEntries(4, keywordIgnore);
-            keywordEntries.clear();
-
-            URL url;
-            try {
-                url = parseURL(link);
-            } catch (std::runtime_error &ex) {
-                std::cerr << ex.what() << std::endl;
-                Metrics::getFailedPageCount()->Increment();
-                pResult->pushFailed(link);
-                continue;
-            }
-
-            HTTPResponse response;
-            try {
-                response = HTTPClient::load(link);
-            } catch (std::exception &ex) {
-                std::cerr << ex.what() << std::endl;
-                Metrics::getFailedPageCount()->Increment();
-                pResult->pushFailed(link);
-                continue;
-            }
-
-            if (response.statusCode >= 400) {
-                std::cerr << link << " : status code " << response.statusCode << std::endl;
-                Metrics::getFailedPageCount()->Increment();
-                pResult->pushFailed(link);
-                continue;
-            }
-
-            Metrics::getDownloadPageCount()->Increment();
-            Metrics::getDownloadPageDuration()->Increment(Metrics::since(__processPageStart).count());
-
-            auto __parsePageStart = Metrics::now();
-            try {
-                scanner->load(response.content);
-            } catch (std::runtime_error &ex) {
-                std::cerr << link << " : " << ex.what() << std::endl;
-                Metrics::getFailedPageCount()->Increment();
-                pResult->pushFailed(link);
-                continue;
-            }
-
-            for (const auto &line : scanner->getBodyText()) {
-                keywordEntries.appendPhrase(line);
-            }
-
-
-            std::map<std::string, unsigned int> keywordsMap = keywordEntries.getTop();
-            if (keywordsMap.empty()) {
-                Metrics::getFailedPageCount()->Increment();
-                pResult->pushFailed(link);
-                continue;
-            }
-
-            result->pushVisited(Resource{
-                    link,
-                    url.host,
-                    scanner->getMetaTitle(),
-                    scanner->getMetaDescription(),
-                    scanner->getBodyTitle(),
-                    keywordsMap
-            });
-
-            const std::vector<std::string> &contentLinks = getLinkAddresses(response.content);
-            normalizeHrefsToLinks(contentLinks, url.protocol, url.host);
-            if (!contentLinks.empty()) {
-                result->appendLinks(contentLinks);
-//                std::cout << link << " : ok" << std::endl;
-            } else {
-//                std::cout << link << " : no links" << std::endl;
-            }
-            Metrics::getParsePageDuration()->Increment(Metrics::since(__parsePageStart).count());
-            Metrics::getProcessingPageTotalDuration()->Increment(Metrics::since(__processPageStart).count());
-
-        }
-
-        delete scanner;
-    };
-
-
-    for (size_t thi = 0; thi < multi; ++thi) {
-        std::vector<std::string> chunk = splitter.getNext();
-        std::thread thread(func, chunk, pResult);
-        threads.emplace_back(std::move(thread));
-    }
-    for (auto &th : threads) {
-        th.join();
-    }
 }

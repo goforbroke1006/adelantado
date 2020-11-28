@@ -24,8 +24,12 @@ RUN bash ./setup.sh
 
 COPY ./ ./
 RUN ls -lah
-RUN make build
+RUN cmake -DCMAKE_BUILD_TYPE=Release . && \
+    cmake --build . -- -j4
+#RUN ls -lah
+RUN cp /code/adelantado /usr/local/bin/adelantado
+RUN rm -rf /code
 
-WORKDIR /code/build
+WORKDIR /app
 
-ENTRYPOINT [ "/code/build/adelantado" ]
+ENTRYPOINT [ "adelantado" ]

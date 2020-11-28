@@ -23,8 +23,8 @@ bash ./install-gumbo.sh
 bash ./install-prometheus-cpp.sh
 bash ./setup.linux.sh
 
-#git submodule init
-#git submodule update
+git submodule init
+git submodule update --remote
 
 docker-compose up -d
 sleep 10 # wait for docker-compose warm-up
@@ -58,3 +58,8 @@ cd build
 ### Useful links 
 
 * https://prometheus.io/docs/introduction/first_steps/
+
+### Modules
+
+* git submodule add -- https://github.com/goforbroke1006/goxx-std.git modules/goforbroke1006/goxx-std
+* git submodule add -- https://github.com/nlohmann/json.git           modules/nlohmann/json

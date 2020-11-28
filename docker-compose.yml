@@ -4,7 +4,11 @@ services:
   adelantado:
     image: docker.io/goforbroke1006/adelantado:latest
     volumes:
-      - .deploy/adelantado/adelantado.cfg:/code/build/adelantado.cfg
+      - .deploy/adelantado/adelantado.cfg:/app/adelantado.cfg
+      - ./domain-priority.txt:/app/domain-priority.txt
+      - ./keyword-ignore.txt:/app/keyword-ignore.txt
+      - ./keywords.txt:/app/keywords.txt
+      - ./links.txt:/app/links.txt
     restart: always
 
   db:
@@ -17,8 +21,7 @@ services:
       - 25432:5432
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      - ./migrations/1-schema.sql:/docker-entrypoint-initdb.d/1-schema.sql
-      - ./migrations/2-data.sql:/docker-entrypoint-initdb.d/2-data.sql
+      - ./migrations/:/docker-entrypoint-initdb.d/
 
   grafana:
     image: grafana/grafana:6.7.3

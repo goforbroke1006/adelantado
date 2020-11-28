@@ -4,10 +4,11 @@
 
 #include "LinkStorage.h"
 
+#include <nlohmann/json.hpp>
 #include <stdexcept>
+#include <goxx-std-strings.h>
 
 #include "common.h"
-#include "../../modules/nlohmann-json/json.hpp"
 
 LinkStorage::LinkStorage(PGconn *conn)
         : mConnection(conn) {}
@@ -29,42 +30,45 @@ void LinkStorage::registerLink(const std::string &address) {
     PQclear(res);
 }
 
-void
-LinkStorage::storeLink(
-        const std::string &address,
-        const std::string &domain,
-        const std::string &metaTitle,
-        const std::string &metaDescr,
-        const std::string &bodyTitle,
-        const std::map<std::string, unsigned int> &keywords
-) {
+void LinkStorage::storeLink(const Resource &resource) {
     std::string sql = ""
                       "INSERT INTO links ("
                       "   address, "
                       "   domain, "
-                      "   meta_title, meta_description, "
+                      "   meta_title, meta_description, meta_keywords, "
                       "   body_title, body_keywords, "
-                      "   checked_at"
+                      "   checked_at, "
+                      "   og_title, og_image, og_description, og_site_name, "
+                      "   last_status_code, page_content_size, charset "
                       ") VALUES ("
                       "   $1, "
                       "   $2, "
-                      "   $3, $4, "
-                      "   $5, $6, "
-                      "   NOW() "
+                      "   $3, $4, $5, "
+                      "   $6, $7, "
+                      "   NOW(), "
+                      "   $8, $9, $10, $11, "
+                      "   $12, $13, $14 "
                       ")"
                       "ON CONFLICT (address) "
                       "DO UPDATE SET "
                       "  domain           = $2, "
                       "  meta_title       = $3, "
                       "  meta_description = $4, "
-                      "  body_title       = $5, "
-                      "  body_keywords    = $6, "
-                      "  checked_at       = NOW() ";
+                      "  meta_keywords    = $5, "
+                      "  body_title       = $6, "
+                      "  body_keywords    = $7, "
+                      "  checked_at       = NOW(), "
+                      "  og_title = $8, og_image = $9, og_description = $10, og_site_name = $11, "
+                      "  last_status_code  = $12, "
+                      "  page_content_size = $13, "
+                      "  charset           = $14 ";
+
+    std::string metaKeywordsStr = goxx_std::strings::join(resource.metaKeywords, ", ");
 
     std::string keywordsStr;
-    if (!keywords.empty()) {
+    if (!resource.bodyKeywords.empty()) {
         nlohmann::json keywordsJson;
-        for (const auto &kv : keywords) {
+        for (const auto &kv : resource.bodyKeywords) {
             keywordsJson[kv.first] = kv.second;
         }
         keywordsStr = keywordsJson.dump();
@@ -72,13 +76,22 @@ LinkStorage::storeLink(
         keywordsStr = "{}";
     }
 
-    const int paramsSize = 6;
+    const int paramsSize = 14;
     const char *paramValues[paramsSize] = {
-            address.c_str(),
-            domain.c_str(),
-            metaTitle.c_str(), metaDescr.c_str(),
-            bodyTitle.c_str(),
-            keywordsStr.c_str()
+            resource.address.c_str(),
+            resource.domain.c_str(),
+            resource.metaTitle.c_str(), resource.metaDescr.c_str(), metaKeywordsStr.c_str(),
+            resource.bodyTitle.c_str(),
+            keywordsStr.c_str(),
+            //
+            resource.ogTitle.c_str(),
+            resource.ogImage.c_str(),
+            resource.ogDescription.c_str(),
+            resource.ogSiteName.c_str(),
+            //
+            std::to_string(resource.statusCode).c_str(),
+            std::to_string(resource.pageContentSize).c_str(),
+            resource.charset.c_str(),
     };
     PGresult *res = PQexecParams(
             mConnection, sql.c_str(),
@@ -107,7 +120,7 @@ LinkStorage::loadUncheckedLinks(unsigned int limit, const std::vector<std::strin
                       + "FROM links "
                       + "WHERE "
                       + "  checked_at IS NULL " + byDomainClause + " "
-                      + "  AND next_check_at <= NOW()"
+                      + "  AND (next_check_at <= NOW() OR next_check_at IS NULL) "
                       + "LIMIT " + std::to_string(limit);
     PGresult *res = PQexec(mConnection, sql.c_str());
     if (PQresultStatus(res) != PGRES_TUPLES_OK) {
@@ -131,7 +144,13 @@ LinkStorage::loadUncheckedLinks(unsigned int limit, const std::vector<std::strin
 
 std::vector<std::string>
 LinkStorage::loadUncheckedLinks(unsigned int limit) {
-    std::string sql = "SELECT address FROM links WHERE checked_at IS NULL LIMIT " + std::to_string(limit);
+    std::string sql = std::string()
+                      + "SELECT address "
+                      + "FROM links "
+                      + "WHERE "
+                      + "  checked_at IS NULL "
+                      + "  AND (next_check_at <= NOW() OR next_check_at IS NULL) "
+                      + "LIMIT " + std::to_string(limit);
     PGresult *res = PQexec(mConnection, sql.c_str());
     if (PQresultStatus(res) != PGRES_TUPLES_OK) {
         throw std::runtime_error(std::string() + "failed: " + PQerrorMessage(mConnection));
@@ -151,7 +170,14 @@ LinkStorage::loadUncheckedLinks(unsigned int limit) {
 
 std::vector<std::string>
 LinkStorage::loadCheckedLinks(unsigned int limit) {
-    std::string sql = "SELECT address FROM links ORDER BY checked_at ASC LIMIT " + std::to_string(limit);
+    std::string sql = std::string()
+                      + "SELECT address "
+                      + "FROM links "
+                      + "WHERE "
+                      + "  (next_check_at <= NOW() OR next_check_at IS NULL) "
+                      + "  AND checked_at <= NOW() - INTERVAL '7 DAY'"
+                      + "ORDER BY checked_at ASC "
+                      + "LIMIT " + std::to_string(limit);
     PGresult *res = PQexec(mConnection, sql.c_str());
     if (PQresultStatus(res) != PGRES_TUPLES_OK) {
         throw std::runtime_error(std::string() + "failed: " + PQerrorMessage(mConnection));

@@ -8,12 +8,6 @@ build:
 	rm -rf ./*
 	cmake -DCMAKE_BUILD_TYPE=Release ..
 	cmake --build . -- -j4
-	#
-	rm -rf CMakeFiles/
-	rm -rf tests/
-	rm -f cmake_install.cmake
-	rm -f CMakeCache.txt
-	rm -f Makefile
 
 compress: compress/domain-priority.txt compress/keyword-ignore.txt compress/links.txt
 

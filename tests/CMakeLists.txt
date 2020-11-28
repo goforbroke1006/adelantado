@@ -4,7 +4,7 @@ add_executable(${PROJECT_NAME}
         main.cpp
 
         ../src/url.cpp url.test.cpp
-        ../src/app.cpp app.test.cpp
+        src/scrape/VectorBulkSplitter.test.cpp
         ../src/parser/GumboPageScanner.cpp src/parser/GumboPageScanner.test.cpp
         ../src/parser/KeywordEntries.cpp src/parser/KeywordEntries.test.cpp
         )

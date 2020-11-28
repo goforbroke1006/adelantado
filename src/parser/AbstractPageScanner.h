@@ -19,9 +19,19 @@ public:
 
     virtual std::string getMetaDescription() = 0;
 
+    virtual std::vector<std::string> getMetaKeywords() = 0;
+
     virtual std::string getBodyTitle() = 0;
 
     virtual std::vector<std::string> getBodyText() = 0;
+
+    virtual std::string getOGTitle() = 0;
+
+    virtual std::string getOGImage() = 0;
+
+    virtual std::string getOGDescription() = 0;
+
+    virtual std::string getOGSiteName() = 0;
 };
 
 #endif //ADELANTADO_src_html_ABSTRACT_PAGE_SCANNER_H

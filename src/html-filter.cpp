@@ -2,6 +2,7 @@
 // Created by goforbroke on 13.11.2020.
 //
 
+#include <goxx-std-strings.h>
 #include "html-filter.h"
 
 void recursiveFilterLinks(GumboNode *node, std::vector<std::string> &result) {
@@ -45,34 +46,56 @@ std::vector<std::string> getLinkAddresses(const std::string &html) {
     return contentLinks;
 }
 
-void normalizeHrefsToLinks(std::vector<std::string> links, const std::string &protocol, const std::string &domain) {
+std::vector<std::string>
+normalizeHrefsToLinks(
+        const std::vector<std::string> &links,
+        const std::string &protocol,
+        const std::string &domain
+) {
+    std::vector<std::string> result(links.size());
+
     std::string prefix = protocol + "://" + domain;
 
-    for (size_t i = 0; i < links.size(); ++i) {
-#ifdef DEBUG
-        std::string before = links[i];
-#endif
+    for (auto &cl : links) {
+        std::string link = cl;
 
         // absolute link for current domain
-        if (links[i][0] == '/' && links[i][1] != '/') {
-            links[i] = prefix + links[i];
+        if (link[0] == '/' && link[1] != '/') {
+            link = prefix + link;
         }
 
         // absolute link for current protocol+domain
-        if (links[i][0] == '/' && links[i][1] == '/') {
-            links[i] = protocol + ":" + links[i];
+        if (link[0] == '/' && link[1] == '/') {
+            link = protocol + ":" + link;
         }
 
         // TODO: remove fragment from link
 
         // TODO: remove utm params
 
-#ifdef DEBUG
-        if (before != links[i]) {
-            std::cout << "    " << before << " => " << links[i] << std::endl;
-        }
-#endif
+        link = goxx_std::strings::replace(link, "\n", "");
+        link = goxx_std::strings::replace(link, " ", "");
+        link = goxx_std::strings::trimSpace(link);
 
+        if (link.rfind("http", 0) != 0) { // FIXME: workaround
+            continue;
+        }
+        if (link.find("'") != std::string::npos) { // FIXME: workaround
+            continue;
+        }
+        if (link.find("/cgi-bin/") != std::string::npos) { // FIXME: workaround
+            continue;
+        }
+        if (
+                link.find(" ") != std::string::npos
+                || link.find("<") != std::string::npos
+                || link.find(">") != std::string::npos
+                ) {
+            continue;
+        }
+
+        result.push_back(link);
     }
 
+    return result;
 }

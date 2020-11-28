@@ -23,9 +23,19 @@ public:
 
     std::string getMetaDescription() override;
 
+    std::vector<std::string> getMetaKeywords() override;
+
     std::string getBodyTitle() override;
 
     std::vector<std::string> getBodyText() override;
+
+    std::string getOGTitle() override;
+
+    std::string getOGImage() override;
+
+    std::string getOGDescription() override;
+
+    std::string getOGSiteName() override;
 
 private:
     std::string mContent;
@@ -34,6 +44,10 @@ private:
     void getBodyTitleRecursively(GumboNode *node, std::string &result);
 
     void getTextLinesRecursively(GumboNode *node, std::vector<std::string> &result);
+
+    std::vector<GumboNode *> getMetaNodes(const std::string &attr, const std::string &name);
+
+    std::string getMetaNodesContent(const std::string &attr, const std::string &name);
 };
 
 

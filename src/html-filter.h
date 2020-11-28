@@ -14,9 +14,9 @@ void recursiveFilterLinks(GumboNode *node, std::vector<std::string> &result);
 
 std::vector<std::string> getLinkAddresses(const std::string &html);
 
-void
+std::vector<std::string>
 normalizeHrefsToLinks(
-        std::vector<std::string> links,
+        const std::vector<std::string> &links,
         const std::string &protocol,
         const std::string &domain
 );

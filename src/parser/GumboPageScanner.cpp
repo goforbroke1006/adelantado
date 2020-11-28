@@ -6,6 +6,7 @@
 #include "KeywordEntries.h"
 
 #include <cassert>
+#include <goxx-std-strings.h>
 
 GumboPageScanner::GumboPageScanner()
         : mOutput(nullptr), mContent("") {}
@@ -72,44 +73,40 @@ std::string GumboPageScanner::getMetaTitle() {
 }
 
 std::string GumboPageScanner::getMetaDescription() {
-    if (mOutput->root->type != GUMBO_NODE_ELEMENT)
-        return "";
-    if (mOutput->root->v.element.children.length < 2)
-        return "";
+    const std::vector<GumboNode *> &nodes = getMetaNodes("name", "description");
 
-    const GumboVector *root_children = &mOutput->root->v.element.children;
-    GumboNode *head = nullptr;
-    for (int i = 0; i < root_children->length; ++i) {
-        auto *child = (GumboNode *) root_children->data[i];
-        if (child->type == GUMBO_NODE_ELEMENT && child->v.element.tag == GUMBO_TAG_HEAD) {
-            head = child;
-            break;
-        }
-    }
-    if (nullptr == head)
-        return "";
-
-    GumboVector *head_children = &head->v.element.children;
-    for (int i = 0; i < head_children->length; ++i) {
-        auto *child = (GumboNode *) head_children->data[i];
-
+    std::string metaDescription;
+    for (const auto *child : nodes) {
         if (nullptr != child && child->type == GUMBO_NODE_ELEMENT && child->v.element.tag == GUMBO_TAG_META) {
-
-            GumboAttribute *nameAttr = gumbo_get_attribute(&child->v.element.attributes, "name");
-            if (nullptr == nameAttr)
-                continue;
-
-            if (std::string("description") != nameAttr->value) continue;
-
             GumboAttribute *contentAttr = gumbo_get_attribute(&child->v.element.attributes, "content");
             if (nullptr == contentAttr)
                 continue;
 
-            return contentAttr->value;
+            metaDescription += contentAttr->value;
+            metaDescription += " ";
         }
     }
 
-    return "";
+    metaDescription = goxx_std::strings::trimSpace(metaDescription);
+    return metaDescription;
+}
+
+std::vector<std::string> GumboPageScanner::getMetaKeywords() {
+    const std::vector<GumboNode *> &nodes = getMetaNodes("name", "keywords");
+
+    for (const auto *child : nodes) {
+        GumboAttribute *contentAttr = gumbo_get_attribute(&child->v.element.attributes, "content");
+        if (nullptr == contentAttr)
+            continue;
+
+        auto keywords = goxx_std::strings::split(contentAttr->value, ",");
+        for (auto &kw : keywords) {
+            kw = goxx_std::strings::trimSpace(kw);
+        }
+        return keywords;
+    }
+
+    return {};
 }
 
 std::string GumboPageScanner::getBodyTitle() {
@@ -133,6 +130,7 @@ std::string GumboPageScanner::getBodyTitle() {
 
     getBodyTitleRecursively(body, resultTitle);
 
+    resultTitle = goxx_std::strings::trimSpace(resultTitle);
     return resultTitle;
 }
 
@@ -206,4 +204,76 @@ void GumboPageScanner::getTextLinesRecursively(GumboNode *node, std::vector<std:
             getTextLinesRecursively(child, result);
         }
     }
+}
+
+std::vector<GumboNode *> GumboPageScanner::getMetaNodes(const std::string &attr, const std::string &name) {
+    if (mOutput->root->type != GUMBO_NODE_ELEMENT)
+        return {};
+    if (mOutput->root->v.element.children.length < 2)
+        return {};
+
+    const GumboVector *root_children = &mOutput->root->v.element.children;
+    GumboNode *head = nullptr;
+    for (int i = 0; i < root_children->length; ++i) {
+        auto *child = (GumboNode *) root_children->data[i];
+        if (child->type == GUMBO_NODE_ELEMENT && child->v.element.tag == GUMBO_TAG_HEAD) {
+            head = child;
+            break;
+        }
+    }
+    if (nullptr == head)
+        return {};
+
+    std::vector<GumboNode *> result;
+
+    GumboVector *head_children = &head->v.element.children;
+    for (int i = 0; i < head_children->length; ++i) {
+        auto *child = (GumboNode *) head_children->data[i];
+
+        if (nullptr != child && child->type == GUMBO_NODE_ELEMENT && child->v.element.tag == GUMBO_TAG_META) {
+
+            GumboAttribute *nameAttr = gumbo_get_attribute(&child->v.element.attributes, attr.c_str());
+            if (nullptr == nameAttr)
+                continue;
+
+            if (name != nameAttr->value)
+                continue;
+
+            result.push_back(child);
+        }
+    }
+
+    return result;
+}
+
+std::string GumboPageScanner::getMetaNodesContent(const std::string &attr, const std::string &name) {
+    const std::vector<GumboNode *> &nodes = getMetaNodes(attr, name);
+    std::string allNodesContent;
+    for (const auto &ogtNode : nodes) {
+        GumboAttribute *contentAttr = gumbo_get_attribute(&ogtNode->v.element.attributes, "content");
+        if (nullptr == contentAttr)
+            continue;
+
+        allNodesContent += contentAttr->value;
+        allNodesContent += " ";
+    }
+
+    allNodesContent = goxx_std::strings::trimSpace(allNodesContent);
+    return allNodesContent;
+}
+
+std::string GumboPageScanner::getOGTitle() {
+    return getMetaNodesContent("property", "og:title");
+}
+
+std::string GumboPageScanner::getOGImage() {
+    return getMetaNodesContent("property", "og:image");
+}
+
+std::string GumboPageScanner::getOGDescription() {
+    return getMetaNodesContent("property", "og:description");
+}
+
+std::string GumboPageScanner::getOGSiteName() {
+    return getMetaNodesContent("property", "og:og:site_name");
 }
