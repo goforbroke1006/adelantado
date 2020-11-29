@@ -18,6 +18,7 @@ set(SOURCES  src/url.h src/url.cpp
         src/parser/KeywordEntries.h src/parser/KeywordEntries.cpp
 
         src/storage/LinkStorage.h src/storage/LinkStorage.cpp
+        src/storage/LinkBatchStorage.h src/storage/LinkBatchStorage.cpp
 
         src/Metrics.h src/Metrics.cpp
         src/scrape/MultiThreadPageScrapper.h src/scrape/MultiThreadPageScrapper.cpp

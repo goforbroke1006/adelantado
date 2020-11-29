@@ -3,10 +3,12 @@
 #include <csignal>
 #include "src/runtime.h"
 #include "src/cfgloader.h"
-#include "src/storage/LinkStorage.h"
 #include "src/storage/common.h"
-#include <postgresql/libpq-fe.h>
 
+#include "src/storage/LinkStorage.h"
+#include "src/storage/LinkBatchStorage.h"
+
+#include <postgresql/libpq-fe.h>
 #include "src/helper.h"
 #include "src/Metrics.h"
 #include "src/scrape/ObserverResult.h"
@@ -55,12 +57,13 @@ int main() {
     config->lookupValue("queue_pause", queue_pause);
 
     auto *linkStorage = new LinkStorage(conn);
+    auto *linkBatchStorage = new LinkBatchStorage(conn);
 
     auto initLinks = loadConfig("./links.txt");
     for (const auto &il : initLinks) {
         try {
             auto regLinkStart = Metrics::now();
-            linkStorage->registerLink(il);
+            linkBatchStorage->registerLink(il);
             Metrics::getRegisterLinkDuration()->Increment(Metrics::since(regLinkStart));
             Metrics::getRegisterLinkCount()->Increment();
         } catch (DuplicateKeyException &ex) {
@@ -69,6 +72,7 @@ int main() {
             Logger_Error_F("can't register new link '%s': %s", il.c_str(), ex.what());
         }
     }
+    linkBatchStorage->flush();
 
     while (isReady) {
         auto start = std::chrono::high_resolution_clock::now();
@@ -98,7 +102,7 @@ int main() {
         for (auto &queuedLink : observerResult->getMQueuedLinks()) {
             try {
                 auto regLinkStart = Metrics::now();
-                linkStorage->registerLink(queuedLink);
+                linkBatchStorage->registerLink(queuedLink);
                 Metrics::getRegisterLinkDuration()->Increment(Metrics::since(regLinkStart));
                 Metrics::getRegisterLinkCount()->Increment();
             } catch (DuplicateKeyException &ex) {
@@ -107,6 +111,7 @@ int main() {
                 Logger_Error_F("can't register link '%s': %s", queuedLink.c_str(), ex.what());
             }
         }
+        linkBatchStorage->flush();
 
         for (auto &failedLink : observerResult->getMFailedLinks()) {
             linkStorage->postpone(failedLink);
