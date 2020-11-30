@@ -9,11 +9,28 @@
 #include <map>
 #include <vector>
 
+enum Charset {
+    UNDEFINED,
+    UTF8,
+    CP1251,
+};
+
+inline std::string getCharsetLabel(Charset cs) {
+    std::vector<std::string> label({
+                                           "UNDEFINED",
+                                           "UTF8",
+                                           "CP1251",
+                                   });
+    return label[cs];
+}
+
 class AbstractPageScanner {
 public:
     virtual ~AbstractPageScanner() = default;
 
     virtual void load(const std::string &content) = 0;
+
+    virtual Charset getCharset() = 0;
 
     virtual std::string getMetaTitle() = 0;
 

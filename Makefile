@@ -1,4 +1,7 @@
-all: build
+all: dep build
+
+dep:
+	git submodule update --remote
 
 .PHONY: build
 .ONESHELL:

@@ -11,9 +11,9 @@ TEST(GumboPageScanner_all, positive_simplest) {
 
 <html>
 <head>
-  <title>Hello Gumbo, thank Google!</title>
-  <meta name="description" content="Some short page descRipTioN!!!">
-  <meta name="keywords" content="glsl, hlsl, metal, generator">
+    <title>Hello Gumbo, thank Google!</title>
+    <meta name="description" content="Some short page descRipTioN!!!">
+    <meta name="keywords" content="glsl, hlsl, metal, generator">
 
     <meta property="og:title" content="How quickly to create ..."/>
     <meta property="og:image" content="https://vaaalera.org/uploads/image.png"/>
@@ -46,4 +46,69 @@ TEST(GumboPageScanner_all, positive_simplest) {
     ASSERT_EQ("How to create even in Calendar", scanner->getOGDescription());
 
     ASSERT_EQ(2, scanner->getBodyText().size());
+}
+
+TEST(GumboPageScanner_getCharset, positive_utf_8) {
+    const char *content = R"(
+<html>
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>HELLO</body>
+<html>
+
+)";
+    AbstractPageScanner *scanner = new GumboPageScanner();
+    scanner->load(content);
+
+    ASSERT_EQ(Charset::UTF8, scanner->getCharset());
+}
+TEST(GumboPageScanner_getCharset, positive_2_utf_8) {
+    const char *content = R"(
+<html>
+<head>
+    <meta charset="utf-8">
+</head>
+<body>HELLO</body>
+<html>
+
+)";
+    AbstractPageScanner *scanner = new GumboPageScanner();
+    scanner->load(content);
+
+    ASSERT_EQ(Charset::UTF8, scanner->getCharset());
+}
+
+TEST(GumboPageScanner_getCharset, positive_windows_1251) {
+    const char *content = R"(
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=windows-1251">
+</head>
+<body>HELLO</body>
+<html>
+
+)";
+    AbstractPageScanner *scanner = new GumboPageScanner();
+    scanner->load(content);
+
+    ASSERT_EQ(Charset::CP1251, scanner->getCharset());
+}
+
+TEST(GumboPageScanner_getCharset, positive_youtube) {
+    const char *content = R"(
+<html>
+<head>
+    <div inlined-html>
+        <meta charset="UTF-8">
+    </div>
+</head>
+<body>HELLO</body>
+<html>
+
+)";
+    AbstractPageScanner *scanner = new GumboPageScanner();
+    scanner->load(content);
+
+    ASSERT_EQ(Charset::CP1251, scanner->getCharset());
 }

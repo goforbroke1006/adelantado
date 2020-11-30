@@ -7,7 +7,7 @@
 
 #include <string>
 #include <vector>
-
+#include <memory>
 
 #include "../domain.h"
 #include "ObserverResult.h"
@@ -20,15 +20,11 @@ public:
             size_t multi
     );
 
-    ObserverResult *scrape() const;
+    std::shared_ptr<ObserverResult> scrape() const;
 
 private:
     const std::vector<std::string> &links;
     const size_t multi;
-
-    static void shortify(std::string &target, size_t len);
-
-    static void shortify(std::vector<std::string> &target, size_t len);
 };
 
 

@@ -30,15 +30,20 @@ void signalHandler(int signum) {
 
 int main() {
     signal(SIGINT, signalHandler);
+    Logger_Info("Initialization...");
 
-    prometheus::Exposer exposer{"0.0.0.0:8080"};
+    libconfig::Config *config = loadAppConfig("adelantado.cfg");
+
+    std::string handleAddr;
+    config->lookupValue("handle_addr", handleAddr);
+    prometheus::Exposer exposer{handleAddr};
+    Logger_Info_F("Start listen on '%s'", handleAddr.c_str());
+
     auto registry = std::make_shared<prometheus::Registry>();
     Metrics::init("adelantado", registry.get());
     exposer.RegisterCollectable(registry);
 
-    libconfig::Config *config = loadAppConfig("adelantado.cfg");
-
-    Logger_Debug_F("allowed CPUs: %d", getCPUCount());
+    Logger_Info_F("allowed CPUs: %d", getCPUCount());
 
     PGconn *conn;
     try {
@@ -47,6 +52,7 @@ int main() {
         Logger_Error_F("open db connection failed: %s", ex.what());
         exit(EXIT_FAILURE);
     }
+    Logger_Info("Connected to DB...");
 
     int queue_limit_priority,
             queue_limit_unchecked,
@@ -88,9 +94,10 @@ int main() {
         auto checkedLinks = linkStorage->loadCheckedLinks(queue_limit_checked);
         links.insert(links.end(), checkedLinks.begin(), checkedLinks.end());
 
+        Logger_Info_F("Load %ld links from DB", links.size());
 
-        auto *pScrapper = new MultiThreadPageScrapper(links, getCPUCount());
-        auto *observerResult = pScrapper->scrape();
+        auto pScrapper = std::make_shared<MultiThreadPageScrapper>(links, getCPUCount());
+        auto observerResult = pScrapper->scrape();
 
         for (auto &res : observerResult->getMVisitedLinks()) {
             try {
@@ -117,11 +124,10 @@ int main() {
             linkStorage->postpone(failedLink);
         }
 
-        delete observerResult;
-
         auto finish = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start).count();
-        std::cout << "Spend time: " << (static_cast<double>(duration) / 1000) << " sec." << std::endl;
+        auto duration = std::chrono::duration_cast<std::chrono::seconds>(finish - start).count();
+
+        Logger_Info_F("Spend time: '%ld' seconds", duration);
 
         sleep(queue_pause);
     }

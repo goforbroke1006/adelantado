@@ -16,14 +16,17 @@
 #include "../HTTPClient.h"
 #include "../html-filter.h"
 
+#include "utils.h"
+#include "../char-conv.h"
+
 MultiThreadPageScrapper::MultiThreadPageScrapper(
         const std::vector<std::string> &links,
         size_t multi
 )
         : links(links), multi(multi) {}
 
-ObserverResult *MultiThreadPageScrapper::scrape() const {
-    auto *result = new ObserverResult();
+std::shared_ptr<ObserverResult> MultiThreadPageScrapper::scrape() const {
+    auto result = std::make_shared<ObserverResult>();
 
     VectorBulkSplitter<std::string> splitter(links, multi);
     std::vector<std::thread> threads;
@@ -75,8 +78,10 @@ ObserverResult *MultiThreadPageScrapper::scrape() const {
             Metrics::getDownloadPageDuration()->Increment(Metrics::since(processPageStart));
 
             auto parsePageStart = Metrics::now();
+            std::string &content = response.content;
+
             try {
-                scanner->load(response.content);
+                scanner->load(content);
             } catch (std::runtime_error &ex) {
                 Logger_Warn_F("parse '%s' failed: %s", link.c_str(), ex.what());
 
@@ -97,6 +102,22 @@ ObserverResult *MultiThreadPageScrapper::scrape() const {
                 continue;
             }
 
+            if (Charset::UTF8 != scanner->getCharset()) {
+                Logger_Warn_F("parse '%s' failed: unexpected charset %s",
+                              link.c_str(), getCharsetLabel(scanner->getCharset()).c_str());
+                {
+                    Resource resource;
+
+                    resource.address = link;
+                    resource.domain = url.host;
+                    resource.statusCode = -1;
+                    resource.charset = getCharsetLabel(scanner->getCharset());
+
+                    result->pushVisited(resource);
+                }
+                continue;
+            }
+
             Resource resource;
 
             resource.address = link;
@@ -114,26 +135,25 @@ ObserverResult *MultiThreadPageScrapper::scrape() const {
             resource.ogSiteName = scanner->getOGSiteName();
             //
             resource.statusCode = response.statusCode;
-            resource.pageContentSize = response.content.size();
+            resource.pageContentSize = content.size();
             resource.charset = ""; // TODO:
 
 
             //
-            
-            shortify(resource.metaTitle, 2048);
-            shortify(resource.metaDescr, 2048);
-            shortify(resource.metaKeywords, 15);
-            shortify(resource.bodyTitle, 2048);
 
-            shortify(resource.ogTitle, 2048);
-            shortify(resource.ogImage, 2048);
-            shortify(resource.ogDescription, 2048);
-            shortify(resource.ogSiteName, 2048);
+            shortify(resource.metaTitle, 2047);
+            shortify(resource.metaDescr, 2047);
+            shortify(resource.metaKeywords, 15);
+            shortify(resource.bodyTitle, 2047);
+
+            shortify(resource.ogTitle, 2047);
+            shortify(resource.ogImage, 2047);
+            shortify(resource.ogDescription, 2047);
+            shortify(resource.ogSiteName, 2047);
 
             result->pushVisited(resource);
-            Logger_Info_F("'%s' ok", link.c_str());
 
-            std::vector<std::string> contentLinks = getLinkAddresses(response.content);
+            std::vector<std::string> contentLinks = getLinkAddresses(content);
             contentLinks = normalizeHrefsToLinks(contentLinks, url.protocol, url.host);
             if (!contentLinks.empty()) {
                 result->appendLinks(contentLinks);
@@ -149,7 +169,7 @@ ObserverResult *MultiThreadPageScrapper::scrape() const {
 
     for (size_t thi = 0; thi < multi; ++thi) {
         std::vector<std::string> chunk = splitter.getNext();
-        std::thread thread(func, chunk, result);
+        std::thread thread(func, chunk, result.get());
         threads.emplace_back(std::move(thread));
     }
     for (auto &th : threads) {
@@ -157,14 +177,4 @@ ObserverResult *MultiThreadPageScrapper::scrape() const {
     }
 
     return result;
-}
-
-void MultiThreadPageScrapper::shortify(std::string &target, size_t len) {
-    if (target.length() > len)
-        target.resize(len);
-}
-
-void MultiThreadPageScrapper::shortify(std::vector<std::string> &target, size_t len) {
-    if (target.size() > len)
-        target.resize(len);
 }

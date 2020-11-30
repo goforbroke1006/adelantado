@@ -1,4 +1,6 @@
 
+handle_addr = "0.0.0.0:8080"
+
 db_username = "adelantado"
 db_password = "adelantado"
 db_host = "localhost"

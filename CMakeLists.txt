@@ -7,7 +7,9 @@ include_directories(
         modules/goforbroke1006/goxx-std
         modules/nlohmann/json/single_include
 )
-set(SOURCES  src/url.h src/url.cpp
+set(SOURCES
+        src/char-conv.h
+        src/url.h src/url.cpp
         src/HTTPClient.h src/HTTPClient.cpp
         src/runtime.h
         src/cfgloader.h

@@ -35,6 +35,64 @@ void GumboPageScanner::load(const std::string &content) {
     mContent = content;
 }
 
+Charset GumboPageScanner::getCharset() {
+    const GumboVector *root_children = &mOutput->root->v.element.children;
+    GumboNode *head = nullptr;
+    for (int i = 0; i < root_children->length; ++i) {
+        auto *child = (GumboNode *) root_children->data[i];
+        if (child->type == GUMBO_NODE_ELEMENT && child->v.element.tag == GUMBO_TAG_HEAD) {
+            head = child;
+            break;
+        }
+    }
+    if (nullptr == head)
+        return Charset::UNDEFINED;
+
+    std::string charsetStr;
+
+    GumboVector *head_children = &head->v.element.children;
+    for (int i = 0; i < head_children->length; ++i) {
+        auto *child = (GumboNode *) head_children->data[i];
+        if (nullptr == child) continue;
+
+        if (child->type != GUMBO_NODE_ELEMENT || child->v.element.tag != GUMBO_TAG_META)
+            continue;
+
+        // <meta http-equiv="Content-Type" content="text/html; charset=windows-1251">
+        {
+            GumboAttribute *attr = gumbo_get_attribute(&child->v.element.attributes, "content");
+            if (nullptr != attr) {
+                std::string val = attr->value;
+                if (val.find("charset") != std::string::npos) {
+                    auto parts = goxx_std::strings::split(val, ";");
+                    for (auto &p : parts) {
+                        p = goxx_std::strings::trimSpace(p);
+                        if (goxx_std::strings::hasPrefix(p, "charset")) {
+                            auto cs = goxx_std::strings::replace(p, "charset=", "");
+                            charsetStr = cs;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        // <meta charset="UTF-8">
+        {
+            GumboAttribute *attr = gumbo_get_attribute(&child->v.element.attributes, "charset");
+            if (nullptr != attr) {
+                charsetStr = attr->value;
+                break;
+            }
+        }
+    }
+
+    if ("UTF-8" == charsetStr || "utf-8" == charsetStr) return Charset::UTF8;
+    if ("windows-1251" == charsetStr) return Charset::CP1251;
+
+    return Charset::UNDEFINED;
+}
+
 std::string GumboPageScanner::getMetaTitle() {
     if (nullptr == mOutput || mOutput->root->type != GUMBO_NODE_ELEMENT) {
         return "";

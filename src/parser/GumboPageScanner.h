@@ -19,6 +19,8 @@ public:
 
     void load(const std::string &content) override;
 
+    Charset getCharset() override;
+
     std::string getMetaTitle() override;
 
     std::string getMetaDescription() override;
