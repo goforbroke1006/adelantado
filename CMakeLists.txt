@@ -48,11 +48,13 @@ add_subdirectory(tests)
 
 
 # move configs
-file(COPY adelantado.cfg DESTINATION ${CMAKE_BINARY_DIR})
-file(COPY keywords.txt DESTINATION ${CMAKE_BINARY_DIR})
-file(COPY links.txt DESTINATION ${CMAKE_BINARY_DIR})
-file(COPY keyword-ignore.txt DESTINATION ${CMAKE_BINARY_DIR})
-file(COPY domain-priority.txt DESTINATION ${CMAKE_BINARY_DIR})
+if (CMAKE_BUILD_TYPE EQUAL "DEBUG")
+    file(COPY adelantado.cfg DESTINATION ${CMAKE_BINARY_DIR})
+    file(COPY keywords.txt DESTINATION ${CMAKE_BINARY_DIR})
+    file(COPY links.txt DESTINATION ${CMAKE_BINARY_DIR})
+    file(COPY keyword-ignore.txt DESTINATION ${CMAKE_BINARY_DIR})
+    file(COPY domain-priority.txt DESTINATION ${CMAKE_BINARY_DIR})
+endif ()
 
 # add google html parser
 target_link_libraries(${PROJECT_NAME} gumbo)

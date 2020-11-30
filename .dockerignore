@@ -7,3 +7,12 @@ Dockerfile
 .dockerignore
 .git
 .gitignore
+
+deploy.sh
+docker-compose.yml
+domain-priority.txt
+keyword-ignore.txt
+keywords.txt
+links.txt
+Makefile
+README.md
